@@ -14,7 +14,7 @@ cd saving
 Create and activate a python virtual environment:
 ```
 python3 -m venv venv
-/venv/bin/activate
+venv/bin/activate
 ```
 
 Install the required packages:
