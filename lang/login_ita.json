@@ -1,0 +1,18 @@
+{
+    "user_exists" : "Utente già registrato!",
+    "password_not_matching" : "Le password non corrispondono, riprova.",
+    "wrong_password" : "Password errata, riprova.",
+    "user_not_exists" : "Utente non esistente, registrati.",
+    "password_no_spaces" : "Le password non possono contenere spazi!",
+    "username_no_spaces" : "I nomi utente non possono contenere spazi!",
+    "sign_in" : "Accedi",
+    "login" : "Accedi",
+    "remember" : "Ricordami",
+    "reg_redirect" : "Non hai un account?",
+    "make_acc" : "Crea un account",
+    "sign_up" : "Registrati",
+    "register" : "Registrati",
+    "login_redirect" : "Hai già un account?",
+    "username" : "Nome utente",
+    "confirm_psw" : "Conferma password"
+}

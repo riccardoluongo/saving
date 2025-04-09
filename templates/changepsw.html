@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8"/>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+        <link rel = "stylesheet" href="/static/style.css">
+        <title>{{ translation['change_psw'] }}</title>
+        <link rel = "icon" href = "/static/favicon.ico" type = "image/x-icon">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.7.2/css/bulma.min.css"/>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+        <script src="/static/changepsw.js"></script>
+    </head>
+    <style>
+        body{
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+    </style>
+    <body>
+        <a class="home-link" href="/"><i class="fa fa-home fa-3x home" aria-hidden="true"></i></a>
+        <div class="register-box" id="change-psw-box">
+            <div class="login-title" id="change-psw-title">{{ translation['change_psw'] }}</div>
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="alert-container">
+                        {% for category, message in messages %}
+                            {{ message }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+            <form action="#" method="post" class="reg-form-container" onsubmit="validateForm(event);">
+                <input type="password" name="current-password" class="input is-large" placeholder="{{ translation['current_psw'] }}" style="height: 40px; margin-top: 5px;" required/>
+                <input type="password" name="new-password" class="input is-large" placeholder="{{ translation['new_psw'] }}" style="height: 40px; margin-top: 5px;" required/>
+                <input type="password" name="confirm-new-password" class="input is-large" placeholder="{{ translation['conf_psw'] }}" style="height: 40px; margin-top: 5px;" required/>
+                <button type="submit" id="submit-changepsw" class="button is-block is-info is-large is-fullwidth register-btn" style="height: 40px; padding-top: 0; margin-top: 5px; background-color: rgb(70,133,96);">{{ translation['save'] }}</button>
+            </form>
+        </div>
+    </body>
+    <script>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                document.getElementById("change-psw-title").style.marginBottom = "0";
+                document.getElementById("change-psw-box").style.height = "37%";
+            {% endif %}
+        {% endwith %}
+    </script>

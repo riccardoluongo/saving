@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<head>
+  <title>Savings</title>
+  <link rel = "icon" href = "/static/favicon.ico" type = "image/x-icon">
+  <link rel = "stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="/static/bootstrap.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="/static/bootstrap.js"></script>
+  <script src="/static/main.js"></script>
+  <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1">
+</head>
+
+<body>
+  <i class="fa fa-bars menu-btn fa-2x" aria-hidden="true" onclick="openNav()"></i>
+  <select class="choose-wallet" id="wallet-selector">
+    <option value="Totalbalance">{{ translation['total'] }}</option>
+  </select>
+  <i class="fa fa-user menu-btn2 fa-2x" aria-hidden="true" onclick="openNav2()"></i>
+  <div id="main-square" class="main-square">
+      <div class="balance">
+          <div class="balance-title">{{ translation['current'] }}</div>
+          <div class="balance-value" id="balance-val"></div>
+          <div class="piggy-wrapper"><img src="/static/piggy.png" class="piggy"></img></div>
+      </div>
+  </div>
+  <div class="transactions-square" id="transaction-square">
+      <span class="trans-title">{{ translation['transactions'] }}</span>
+      <select class="items-page" id="items-page" title="Items per page">
+        <option value="15">15</option>
+        <option value="30">30</option>
+        <option value="100">100</option>
+        <option value="0">{{ translation['all'] }}</option>
+      </select>
+      <span class="prev-btn" onclick="scrollPageBtnBack()"><</span>
+      <span id="page-btn-wrapper" class="page-btn-wrapper"></span>
+      <span class="next-btn" onclick="scrollPageBtnFwd()">></span>
+      <div class="trans-table-wrapper">
+        <table class="trans-table" id="trans-table" border="1"></table>
+      </div>
+  </div>
+  <div class="modal" id="addModal" tabindex="-1" role="dialog" aria-labelledby="addModalTitle" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="addModalTitle">{{ translation['add'] }}</h5>
+            <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close" style="border: 0; background:transparent;">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            <form id="add-form">
+              <div class="modal-input">
+                <label for="add-transaction-name">{{ translation['name_sorter'] }}</label><br>
+                <input type="text" id="add-transaction-name" autocomplete="off" autofocus minlength="1"><br>
+                <label for="add-transaction-value">{{ translation['value_sorter'] }}</label><br>
+                <input type="number" id="add-transaction-value" value="0" autocomplete="off" step="0.01" min="0.01" required><br>
+              </div>
+                <div class="modal-footer" style="margin-top: 10px;">
+                <button type="submit" class="btn btn-primary" data-bs-dismiss="modal">{{ translation['save'] }}</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ translation['close'] }}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal" id="payModal" tabindex="-1" role="dialog" aria-labelledby="payModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="payModalTitle">{{ translation['pay'] }}</h5>
+          <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close" style="border: 0; background:transparent;">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+            <form id="pay-form">
+              <div class="modal-input">
+                <label for="pay-transaction-name">{{ translation['name_sorter'] }}</label><br>
+                <input type="text" id="pay-transaction-name" autocomplete="off" autofocus minlength="1"><br>
+                <label for="pay-transaction-value">{{ translation['value_sorter'] }}</label><br>
+                <input type="number" id="pay-transaction-value" value="0" autocomplete="off" step="0.01" min="0.01" required><br>
+              </div>
+              <div class="modal-footer" style="margin-top: 10px;">
+                <button type="submit" class="btn btn-primary" data-bs-dismiss="modal">{{ translation['save'] }}</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ translation['close'] }}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id="mainSidenav" class="sidenav">
+    <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
+    <a href="/summary">{{ translation['summary'] }}</a>
+    <a href="/edit_wallets">{{ translation['edit'] }}</a>
+  </div>
+  <div id="accSidenav" class="sidenav2">
+    <a href="/switch_lang?lang=eng" class="flag-eng"></a><img src="/static/eng.png" class="flag-eng"></a>
+    <a href="/switch_lang?lang=ita" class="flag-it"></a><img src="/static/ita.png" class="flag-it"></a>
+    <a href="javascript:void(0)" class="closebtn" onclick="closeNav2()">&times;</a>
+    <div><i class="fa fa-user fa-2x" aria-hidden="true" style="color: white; padding: 8px 8px 8px 32px"></i>
+        {% if not text %}
+          <span class="current-user" style="color: red;">N/A</span>
+        {% else %}
+          <span class="current-user">{{text}}</span>
+        {% endif %}
+    </div>
+    <a href="/change_password">{{ translation['change_psw'] }}</a>
+    <a href="/delete_user">{{ translation['del_usr'] }}</a>
+    <a href="/logout">{{ translation['logout'] }}</a>
+  </div>
+</body>

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8"/>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+        <link rel = "stylesheet" href="/static/style.css">
+        <title>{{ translation["sign_in"] }}</title>
+        <link rel = "icon" href = "/static/favicon.ico" type = "image/x-icon">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.7.2/css/bulma.min.css"/>
+        <script src="/static/login.js"></script>
+    </head>
+    <style>
+        body{
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+    </style>
+    <body>
+        <span style="display: none;" id="lang">{{ lang }}</span>
+        <a href="/login?lang=eng" class="login-flag-eng"></a><img src="/static/eng.png" class="login-flag-eng"></a>
+        <a href="/login?lang=ita" class="login-flag-it"></a><img src="/static/ita.png" class="login-flag-it"></a>
+        <div class="register-box" id="login-box">
+            <div class="login-title" id="login-title">{{ translation["sign_in"] }}</div>
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="alert-container">
+                        {% for category, message in messages %}
+                            {{ message }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+            <form action="#" method="post" class="reg-form-container" onsubmit="validateUsername(event);">
+                <input type="text" name="username" class="input is-large" placeholder="{{ translation["username"] }}" autofocus="" style="height: 40px; margin-bottom: 5px;" required/>
+                <input type="password" name="password" class="input is-large" placeholder="Password" style="height: 40px; margin-bottom: 5px;" required/>
+                <button type="submit" class="button is-block is-info is-large is-fullwidth register-btn" style="height: 40px; padding-top: 0; background-color: rgb(70,133,96);">{{ translation["login"] }}</button>
+                <div class="remember-wrapper">
+                    <label class="checkbox">
+                        <input type="checkbox" name="remember" style="left:0;">
+                        {{ translation["remember"] }}
+                    </label>
+                </div>
+            </form>
+            <div class="login-redirect"><a href="/register?lang={{ lang }}" style="color:rgb(25, 156, 80);">{{ translation["reg_redirect"] }}</a></div>
+        </div>
+    </body>
+    <script>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                document.getElementById("login-title").style.marginBottom = "0";
+                document.getElementById("login-box").style.height = "36%";
+            {% endif %}
+        {% endwith %}
+    </script>
+</html>

@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<head>
+    <title>Savings</title>
+    <link rel = "icon" href = "/static/favicon.ico" type = "image/x-icon">
+    <link rel = "stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="/static/bootstrap.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="/static/bootstrap.js"></script>
+    <script src="/static/wallets.js"></script>
+    <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1">
+</head>
+
+<body>
+    <a class="home-link" href="/"><i class="fa fa-home fa-3x home" aria-hidden="true"></i></a>
+    <span class="title">{{ translation['my_wallets'] }}</span>
+    <i class="fa fa-user menu-btn2 fa-2x" aria-hidden="true" onclick="openNav2()"></i>
+    <div class="wallet-container">
+        <div class="wal-btn-container">
+          <button class="btn btn-primary btn-lg wallet-btn" data-bs-toggle="modal" data-bs-target="#walletModal"><i class="fa fa-plus" aria-hidden="true"></i>{{ translation['mkwallet'] }}</button>
+          <button class="btn btn-primary btn-lg wallet-btn" onclick="delAll();"><i class="fa fa-trash" aria-hidden="true"></i>{{ translation['del_all_walls'] }}</button>
+        </div>
+        <div class="table-wrapper">
+          <table class="wallet-table" id="wallet-table" border="1">
+            
+          </table>
+        </div>
+    </div>
+    <div class="modal" id="walletModal" tabindex="-1" role="dialog" aria-labelledby="walletModalTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="walletModalTitle">{{ translation['mkwallet'][1:] }}</h5>
+              <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close" style="border: 0; background:transparent;">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+            <div class="modal-body">
+                <form id="wallet-form">
+                  <div class="modal-input">
+                    <label for="wallet-name">{{ translation['name_sorter'] }}</label><br>
+                    <input type="text" id="wallet-name" autocomplete="off" autofocus minlength="1"><br>
+                    <label for="wallet-start-balance">{{ translation['start_val'] }}</label><br>
+                    <input type="number" id="wallet-start-balance" value="0" autocomplete="off" min="0" step="0.01">
+                  </div>
+                    <div class="modal-footer" style="margin-top: 10px;">
+                        <button type="submit" class="btn btn-primary" data-bs-dismiss="modal">{{ translation['save'] }}</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ translation['close'] }}</button>
+                    </div>
+                </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="accSidenav" class="sidenav2">
+      <a href="/switch_lang?lang=eng" class="flag-eng"></a><img src="/static/eng.png" class="flag-eng"></a>
+      <a href="/switch_lang?lang=ita" class="flag-it"></a><img src="/static/ita.png" class="flag-it"></a>
+      <a href="javascript:void(0)" class="closebtn" onclick="closeNav2()">&times;</a>
+      <div><i class="fa fa-user fa-2x" aria-hidden="true" style="color: white; padding: 8px 8px 8px 32px"></i>
+          {% if not text %}
+            <span class="current-user" style="color: red;">N/A</span>
+          {% else %}
+            <span class="current-user">{{text}}</span>
+          {% endif %}
+      </div>
+      <a href="/change_password">{{ translation['change_psw'] }}</a>
+      <a href="/delete_user">{{ translation['del_usr'] }}</a>
+      <a href="/logout">{{ translation['logout'] }}</a>
+    </div>
+</body>

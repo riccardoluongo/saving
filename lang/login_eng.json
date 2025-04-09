@@ -1,0 +1,18 @@
+{
+    "user_exists" : "User already exists",
+    "password_not_matching" : "Passwords do not match, please retry.",
+    "wrong_password" : "Wrong password, please retry.",
+    "user_not_exists" : "User does not exist, please register.",
+    "password_no_spaces" : "Passwords cannot contain spaces!",
+    "username_no_spaces" : "Usernames cannot contain spaces!",
+    "sign_in" : "Sign in",
+    "login" : "Log in",
+    "remember" : "Remember me",
+    "reg_redirect" : "Don't have an account?",
+    "sign_up" : "Sign up",
+    "make_acc" : "Create an account",
+    "register" : "Register",
+    "login_redirect" : "Already have an account?",
+    "username" : "Username",
+    "confirm_psw" : "Confirm password"
+}

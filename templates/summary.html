@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<head>
+    <title>Summary</title>
+    <link rel = "icon" href = "/static/favicon.ico" type = "image/x-icon">
+    <link rel = "stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="/static/bootstrap.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="/static/bootstrap.js"></script>
+    <script src="/static/anychart.js"></script>
+    <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1">
+</head>
+
+<body id="body">
+    <a class="home-link" href="/"><i class="fa fa-home fa-3x home" aria-hidden="true"></i></a>
+    <select class="choose-wallet" id="year-selector"></select>
+    <i class="fa fa-user menu-btn2 fa-2x" aria-hidden="true" onclick="openNav2()"></i>
+    <div class="summary-container">
+        <div class="graph" id="graph"></div>
+        <select class="choose-month" id="month-selector"></select>
+    </div>
+    <div class="summary-table-container">
+        <table class="summary-table">
+            <tr class="summary-tr">
+                <td class="summary-name-td">{{ translation['jan'] }}</td>
+                <td class="actions-td" id="january">{{ translation['na'] }}</td>
+            </tr>
+            <tr class="summary-tr">
+                <td class="summary-name-td">{{ translation['feb'] }}</td>
+                <td class="actions-td" id="february">{{ translation['na'] }}</td>
+            </tr>
+            <tr class="summary-tr">
+                <td class="summary-name-td">{{ translation['mar'] }}</td>
+                <td class="actions-td" id="march">{{ translation['na'] }}</td>
+            </tr>
+            <tr class="summary-tr">
+                <td class="summary-name-td">{{ translation['apr'] }}</td>
+                <td class="actions-td" id="april">{{ translation['na'] }}</td>
+            </tr>
+            <tr class="summary-tr">
+                <td class="summary-name-td">{{ translation['may'] }}</td>
+                <td class="actions-td" id="may">{{ translation['na'] }}</td>
+            </tr>
+            <tr class="summary-tr">
+                <td class="summary-name-td">{{ translation['jun'] }}</td>
+                <td class="actions-td" id="june">{{ translation['na'] }}</td>
+            </tr>
+            <tr class="summary-tr">
+                <td class="summary-name-td">{{ translation['jul'] }}</td>
+                <td class="actions-td" id="july">{{ translation['na'] }}</td>
+            </tr>
+            <tr class="summary-tr">
+                <td class="summary-name-td">{{ translation['aug'] }}</td>
+                <td class="actions-td" id="august">{{ translation['na'] }}</td>
+            </tr>
+            <tr class="summary-tr">
+                <td class="summary-name-td">{{ translation['sep'] }}</td>
+                <td class="actions-td" id="september">{{ translation['na'] }}</td>
+            </tr>
+            <tr class="summary-tr">
+                <td class="summary-name-td">{{ translation['oct'] }}</td>
+                <td class="actions-td" id="october">{{ translation['na'] }}</td>
+            </tr>
+            <tr class="summary-tr">
+                <td class="summary-name-td">{{ translation['nov'] }}</td>
+                <td class="actions-td" id="november">{{ translation['na'] }}</td>
+            </tr>
+            <tr class="summary-tr">
+                <td class="summary-name-td">{{ translation['dec'] }}</td>
+                <td class="actions-td" id="december">{{ translation['na'] }}</td>
+            </tr>
+        </table>
+    </div>
+    <div id="accSidenav" class="sidenav2">
+        <a href="/switch_lang?lang=eng" class="flag-eng"></a><img src="/static/eng.png" class="flag-eng"></a>
+        <a href="/switch_lang?lang=ita" class="flag-it"></a><img src="/static/ita.png" class="flag-it"></a>
+        <a href="javascript:void(0)" class="closebtn" onclick="closeNav2()">&times;</a>
+        <div><i class="fa fa-user fa-2x" aria-hidden="true" style="color: white; padding: 8px 8px 8px 32px"></i>
+            {% if not text %}
+              <span class="current-user" style="color: red;">N/A</span>
+            {% else %}
+              <span class="current-user">{{text}}</span>
+            {% endif %}
+        </div>
+        <a href="/change_password">{{ translation['change_psw'] }}</a>
+        <a href="/delete_user">{{ translation['del_usr'] }}</a>
+        <a href="/logout">{{ translation['logout'] }}</a>
+      </div>
+</body>
