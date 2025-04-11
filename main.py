@@ -5,21 +5,20 @@ from django_http import url_has_allowed_host_and_scheme
 from db import *
 from datetime import timedelta
 from logging.handlers import RotatingFileHandler
+from dotenv import load_dotenv
+from passlib.hash import pbkdf2_sha512
 import json
 import sys
 import logging
 import os
 import atexit
-from dotenv import load_dotenv
 
 os.system("./logrotate.sh")
 load_dotenv()
 
-SECRET_KEY = os.getenv('SECRET_KEY')
-
 app = Flask(__name__)
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///db.sqlite"
-app.config["SECRET_KEY"] = SECRET_KEY
+app.config["SECRET_KEY"] = os.getenv('SECRET_KEY')
 app.config["SESSION_COOKIE_SAMESITE"] = "Strict"
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=24)
@@ -89,15 +88,18 @@ def register():
         if user:
             flash(ita["user_exists"] if lang == "ita" else eng["user_exists"])
             app.logger.warning(f"Failed registration attempt from {client_ip}: user '{user.username}' already exists")
-            return redirect(url_for('login'))
+            return redirect("/register?lang=" + lang)
         if password != password_confirm:
             flash(ita["password_not_matching"] if lang == "ita" else eng["password_not_matching"])
             app.logger.warning(f"Failed registration attempt from {client_ip}: passwords do not match")
-            return redirect(url_for("register"))
+            return redirect("/register?lang=" + lang)
 
-        user = Users(username=username, password=password)
+        hashedPassword = pbkdf2_sha512.hash(password)
+
+        user = Users(username=username, password=hashedPassword)
         db.session.add(user)
         db.session.commit()
+
         initialize_db(user.username)
         app.logger.info(f"Registered user '{username}', request from {client_ip}")
         return redirect(f"/login?lang={lang}")
@@ -109,6 +111,7 @@ def login():
     lang = request.args["lang"]
     if request.method == "POST":
         username=request.form.get("username")
+        password=request.form.get("password")
         user = Users.query.filter_by(username=username).first()
 
         client_ip = request.headers.get('X-Real-IP')
@@ -121,7 +124,7 @@ def login():
             client_ip = request.remote_addr
 
         if user:
-            if user.password == request.form.get("password"):
+            if pbkdf2_sha512.verify(password, user.password):
                 remember = True if request.form.get('remember') else False
                 login_user(user, remember=remember)
 
@@ -159,16 +162,19 @@ def del_user():
         if not client_ip:
             client_ip = request.remote_addr
 
-        if password == current_user.password and confirm:
+        if pbkdf2_sha512.verify(password, current_user.password) and confirm:
             current_user.remove()
             db.session.commit()
             os.remove(f"database/{username}.db")
+
             flash(ita["account_deleted"] if current_user.lang == "ita" else eng["account_deleted"])
             app.logger.info(f"Removed account '{username}', request from {client_ip}")
-            return redirect(url_for('login'))
+
+            return redirect("/login?lang=" + current_user.lang)
         else:
             flash(ita["wrong_password"] if current_user.lang == "ita" else eng["wrong_password"])
             app.logger.warning(f"Failed attempt to delete account '{username}' by {client_ip}: wrong password")
+
             return redirect(url_for('del_user'))
     return render_template("delete_user.html", translation = (ita if current_user.lang == "ita" else eng))
 
@@ -189,9 +195,9 @@ def change_psw():
         if not client_ip:
             client_ip = request.remote_addr
 
-        if current_psw == current_user.password:
+        if pbkdf2_sha512.verify(current_psw, current_user.password):
             if new_psw == confirm_psw:
-                current_user.password = new_psw
+                current_user.password = pbkdf2_sha512.hash(new_psw)
                 db.session.commit()
                 app.logger.info(f"Changed password for user '{current_user.username}', request from {client_ip}")
                 return redirect(url_for("logout"))
@@ -388,4 +394,4 @@ def get_translations():
         return jsonify(ita)
     else:
         return jsonify(eng)
-#By Riccardo Luongo, 09/04/2025
+#By Riccardo Luongo, 11/04/2025
