@@ -3,6 +3,6 @@ Description=systemd service file for savings app
 [Service]
 User=root
 WorkingDirectory=/mainzfs/saving
-ExecStart=gunicorn -w 6 main:app --access-logfile 'log/access/access.log' -b 0.0.0.0:8700
+ExecStart=venv/bin/gunicorn -w 6 main:app --access-logfile 'log/access/access.log' -b 0.0.0.0:8700
 [Install]
 WantedBy=default.target
