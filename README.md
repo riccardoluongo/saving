@@ -16,6 +16,16 @@ Create the logs directory:
 mkdir log
 ```
 
+Generate a secure secret key for Flask and add it to the .env file (you will need to create it):
+```
+openssl rand -base64 32
+```
+
+Edit the file and add this line with your key at the end:
+```
+SECRET_KEY= #your key here
+```
+
 Create and activate a python virtual environment:
 ```
 python3 -m venv venv
