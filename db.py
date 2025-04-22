@@ -5,6 +5,10 @@ import main
 from sqlite3 import Error
 from datetime import datetime
 
+def is_table_name_valid(table):
+    pattern = r'^[a-zA-Z_][a-zA-Z0-9_]*$'
+    return True if re.fullmatch(pattern, table) else False
+
 def initialize_db(user):
     global create_main_tables_command
 
@@ -96,7 +100,7 @@ def get_wallet_name(input_string):
         else:
             result += input_string[index]
             index += 1
-            
+
     return result
 
 def create_initial_rows(user):
@@ -128,16 +132,15 @@ def update_balance(wallet, value, user):
     except Error as e:
         main.app.logger.error(f"Error while connecting user '{user}' to the database: {e}")
 
-    if not re.match(r'^[A-Za-z0-9_]+$', wallet):
+    if is_table_name_valid(wallet):
+        id = 1
+        sql = f''' UPDATE [{wallet}_balance]
+                SET value = ?
+                WHERE id = ?'''
+        cur.execute(sql, (value, id),)
+        conn.commit()
+    else:
         main.app.logger.error(f"Error while updating the balance for wallet '{wallet}' of user '{user}': invalid table name")
-        conn.close()
-        return
-    id = 1
-    sql = f''' UPDATE [{wallet}_balance]
-              SET value = ?
-              WHERE id = ?'''
-    cur.execute(sql, (value, id),)
-    conn.commit()
     conn.close()
 
 def get_balance(wallet, user):
@@ -150,47 +153,44 @@ def get_balance(wallet, user):
         main.app.logger.error(f"Error while connecting user '{user}' to the database: {e}")
 
     try:
-        if not re.match(r'^[A-Za-z0-9_]+$', wallet):
-            raise Error("Invalid table name")
-        cur.execute(f"SELECT * FROM [{wallet}_balance] WHERE id = 1")
-        balance = cur.fetchall()[0][1]
-        return balance
+        if is_table_name_valid(wallet):
+            cur.execute(f"SELECT * FROM [{wallet}_balance] WHERE id = 1")
+            balance = cur.fetchall()[0][1]
+            return balance
+        else:
+            raise Error("invalid table name")
     except Error as e:
         main.app.logger.error(f"Error while retrieving balance from wallet '{wallet}' for user '{user}': {e}")
-    finally:
-        conn.close()
 
 def create_wallet(name, start_balance, user):
+    database_file = r"./database/"+user+".db"
+
     try:
-        database_file = r"./database/"+user+".db"
+        conn = sqlite3.connect(database_file, check_same_thread=False)
+        cur = conn.cursor()
+    except Error as e:
+        main.app.logger.error(f"Error while connecting user '{user}' to the database: {e}")
 
-        try:
-            conn = sqlite3.connect(database_file, check_same_thread=False)
-            cur = conn.cursor()
-        except Error as e:
-            main.app.logger.error(f"Error while connecting user '{user}' to the database: {e}")
-
-        if not re.match(r'^[A-Za-z0-9_]+$', name):
-            raise Error("Invalid table name")
-
-        cur.executescript(f"""
-        CREATE TABLE IF NOT EXISTS [{name}_transactions] (
+    try:
+        if is_table_name_valid(name):
+            cur.executescript(f"""
+            CREATE TABLE IF NOT EXISTS [{name}_transactions] (
+                id integer PRIMARY KEY,
+                name text NOT NULL,
+                date text NOT NULL,
+                wallet text NOT NULL,
+                price text NOT NULL,
+                balance_snapshot text NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS [{name}_balance] (
             id integer PRIMARY KEY,
-            name text NOT NULL,
-            date text NOT NULL,
-            wallet text NOT NULL,
-            price text NOT NULL,
-            balance_snapshot text NOT NULL
-        );
-        CREATE TABLE IF NOT EXISTS [{name}_balance] (
-        id integer PRIMARY KEY,
-        value text NOT NULL
-        );
-        """)
-        sql = f"INSERT INTO [{name}_balance](value) VALUES(?)"
-        cur.execute(sql, (start_balance+"$",))
-
-        conn.commit()
+            value text NOT NULL
+            );
+            """)
+            cur.execute(f"INSERT INTO [{name}_balance](value) VALUES(?)", (start_balance+"$",))
+            conn.commit()
+        else:
+            raise Error("invalid table name")
     except Error as e:
         main.app.logger.error(f"Error while creating wallet '{name}' for user '{user}': {e}")
     finally:
@@ -222,23 +222,23 @@ def get_wallets(user):
         conn.close()
 
 def delete_wallet(name, user):
+    database_file = r"./database/"+user+".db"
+
     try:
-        database_file = r"./database/"+user+".db"
+        conn = sqlite3.connect(database_file, check_same_thread=False)
+        cur = conn.cursor()
+    except Error as e:
+        main.app.logger.error(f"Error while connecting user '{user}' to the database: {e}")
 
-        try:
-            conn = sqlite3.connect(database_file, check_same_thread=False)
-            cur = conn.cursor()
-        except Error as e:
-            main.app.logger.error(f"Error while connecting user '{user}' to the database: {e}")
-
-        if not re.match(r'^[A-Za-z0-9_]+$', name):
-            raise Error("Invalid table name")
-
-        cur.execute(f"DROP TABLE IF EXISTS [{name}_balance]")
-        cur.execute(f"DROP TABLE IF EXISTS [{name}_transactions]")
-        if name == 'main':
-            cur.execute("UPDATE deleted_tables_check SET value = 1 WHERE ID = 1")
-        conn.commit()
+    try:
+        if is_table_name_valid(name):
+            cur.execute(f"DROP TABLE IF EXISTS [{name}_balance]")
+            cur.execute(f"DROP TABLE IF EXISTS [{name}_transactions]")
+            if name == 'main':
+                cur.execute("UPDATE deleted_tables_check SET value = 1 WHERE ID = 1")
+            conn.commit()
+        else:
+            raise Error("invalid table name")
     except Error as e:
         main.app.logger.error(f"Error while deleting wallet '{name}' for user '{user}': {e}")
     finally:
@@ -266,28 +266,28 @@ def delete_all(user):
         conn.close()
 
 def add_transaction(name, wallet, value, user):
+    database_file = r"./database/"+user+".db"
+
     try:
-        database_file = r"./database/"+user+".db"
+        conn = sqlite3.connect(database_file, check_same_thread=False)
+        cur = conn.cursor()
+    except Error as e:
+        main.app.logger.error(f"Error while connecting user '{user}' to the database: {e}")
 
-        try:
-            conn = sqlite3.connect(database_file, check_same_thread=False)
-            cur = conn.cursor()
-        except Error as e:
-            main.app.logger.error(f"Error while connecting user '{user}' to the database: {e}")
+    balance = round(float(get_balance(wallet,user)[:-1]), 2)
+    value = round(float(value), 2)
+    formatted_value = f"+{value}$"
+    update_balance(wallet, f"{round(balance + value, 2)}$", user)
 
-        balance = round(float(get_balance(wallet,user)[:-1]), 2)
-        value = round(float(value), 2)
-        update_balance(wallet, f"{round(balance + value, 2)}$", user)
+    try:
+        if is_table_name_valid(wallet):
+            sql = f"INSERT INTO [{wallet}_transactions](name, date, wallet, price, balance_snapshot) VALUES(?, datetime('now'), ?, ?, ?)"
 
-        if not re.match(r'^[A-Za-z0-9_]+$', wallet):
-            raise Error("Invalid table name")
-
-        formatted_value = f"+{value}$"
-        sql = f"INSERT INTO [{wallet}_transactions](name, date, wallet, price, balance_snapshot) VALUES(?, datetime('now'), ?, ?, ?)"
-
-        cur.execute(sql, (name, wallet, formatted_value, get_total_balance(user)))
-        conn.commit()
-        return 0
+            cur.execute(sql, (name, wallet, formatted_value, get_total_balance(user)))
+            conn.commit()
+            return 0
+        else:
+            raise Error("invalid table name")
     except Error as e:
         main.app.logger.error(f"Error while processing '{name}' transaction for user '{user}': {e}")
         return 1
@@ -295,28 +295,28 @@ def add_transaction(name, wallet, value, user):
         conn.close()
 
 def pay_transaction(name, wallet, value, user):
+    database_file = r"./database/"+user+".db"
+
     try:
-        database_file = r"./database/"+user+".db"
+        conn = sqlite3.connect(database_file, check_same_thread=False)
+        cur = conn.cursor()
+    except Error as e:
+        main.app.logger.error(f"Error while connecting user '{user}' to the database: {e}")
 
-        try:
-            conn = sqlite3.connect(database_file, check_same_thread=False)
-            cur = conn.cursor()
-        except Error as e:
-            main.app.logger.error(f"Error while connecting user '{user}' to the database: {e}")
+    balance = round(float(get_balance(wallet, user)[:-1]), 2)
+    value = round(float(value), 2)
+    formatted_value = f"-{value}$"
+    update_balance(wallet, f"{round(balance - value, 2)}$", user)
 
-        balance = round(float(get_balance(wallet, user)[:-1]), 2)
-        value = round(float(value), 2)
-        update_balance(wallet, f"{round(balance - value, 2)}$", user)
+    try:
+        if is_table_name_valid(wallet):
+            sql = f"INSERT INTO [{wallet}_transactions](name, date, wallet, price, balance_snapshot) VALUES(?, datetime('now'), ?, ?, ?)"
 
-        if not re.match(r'^[A-Za-z0-9_]+$', wallet):
-            raise Error("Invalid table name")
-
-        formatted_value = f"-{value}$"
-        sql = f"INSERT INTO [{wallet}_transactions](name, date, wallet, price, balance_snapshot) VALUES(?, datetime('now'), ?, ?, ?)"
-
-        cur.execute(sql, (name, wallet, formatted_value, get_total_balance(user)))
-        conn.commit()
-        return 0
+            cur.execute(sql, (name, wallet, formatted_value, get_total_balance(user)))
+            conn.commit()
+            return 0
+        else:
+            raise Error("invalid table name")
     except Error as e:
         main.app.logger.error(f"Error while processing '{name}' transaction for user '{user}': {e}")
         return 1
@@ -324,59 +324,59 @@ def pay_transaction(name, wallet, value, user):
         conn.close()
 
 def get_transactions(wallet, user, offset, limit):
+    database_file = r"./database/"+user+".db"
+    paginated_transactions = []
+    offset = int(offset)
+    limit = int(limit)
+
     try:
-        database_file = r"./database/"+user+".db"
-        paginated_transactions = []
-        offset = int(offset)
-        limit = int(limit)
+        conn = sqlite3.connect(database_file, check_same_thread=False)
+        cur = conn.cursor()
+    except Error as e:
+        main.app.logger.error(f"Error while connecting user '{user}' to the database: {e}")
 
-        try:
-            conn = sqlite3.connect(database_file, check_same_thread=False)
-            cur = conn.cursor()
-        except Error as e:
-            main.app.logger.error(f"Error while connecting user '{user}' to the database: {e}")
+    try:
+        if is_table_name_valid(wallet):
+            cur.execute(f"SELECT name,DATE(date),price,wallet,id FROM [{wallet}_transactions]")
+            transactions = cur.fetchall()
+            transactions.reverse()
 
-        if not re.match(r'^[A-Za-z0-9_]+$', wallet):
-            raise Error("Invalid table name")
+            if limit == 0:
+                return transactions
+            else:
+                for i in range(offset, min(offset+limit, len(transactions))):
+                    paginated_transactions.append(transactions[i])
 
-        cur.execute(f"SELECT name,DATE(date),price,wallet,id FROM [{wallet}_transactions]")
-        transactions = cur.fetchall()
-        transactions.reverse()
-
-        if limit == 0:
-            return transactions
+            return paginated_transactions
         else:
-            for i in range(offset, min(offset+limit, len(transactions))):
-                paginated_transactions.append(transactions[i])
-
-        return paginated_transactions
+            raise Error("invalid table name")
     except Error as e:
         main.app.logger.error(f"Error while retrieving transactions from wallet '{wallet}' for user '{user}': {e}")
     finally:
-        conn.commit()
+        conn.close()
 
 def delete_transaction(wallet,id,user):
+    database_file = r"./database/"+user+".db"
+
     try:
-        database_file = r"./database/"+user+".db"
+        conn = sqlite3.connect(database_file, check_same_thread=False)
+        cur = conn.cursor()
+    except Error as e:
+        main.app.logger.error(f"Error while connecting user '{user}' to the database: {e}")
 
-        try:
-            conn = sqlite3.connect(database_file, check_same_thread=False)
-            cur = conn.cursor()
-        except Error as e:
-            main.app.logger.error(f"Error while connecting user '{user}' to the database: {e}")
+    try:
+        if is_table_name_valid(wallet):
+            cur.execute(f"SELECT price FROM [{wallet}_transactions] WHERE id = ?", (id,))
+            trans_price = cur.fetchall()[0][0]
+            trans_price = float(trans_price[:-1])
 
-        if not re.match(r'^[A-Za-z0-9_]+$', wallet):
-            raise Error("Invalid table name")
+            current_balance = round(float(get_balance(wallet, user)[:-1]), 2)
+            update_balance(wallet, f"{round(current_balance-trans_price, 2)}$", user)
 
-        cur.execute(f"SELECT price FROM [{wallet}_transactions] WHERE id = ?", (id,))
-        trans_price = cur.fetchall()[0][0]
-        trans_price = float(trans_price[:-1])
-
-        current_balance = round(float(get_balance(wallet, user)[:-1]), 2)
-        update_balance(wallet, f"{round(current_balance-trans_price, 2)}$", user)
-
-        cur.execute(f"DELETE FROM [{wallet}_transactions] WHERE id = ?", (id,))
-        conn.commit()
+            cur.execute(f"DELETE FROM [{wallet}_transactions] WHERE id = ?", (id,))
+            conn.commit()
+        else:
+            raise Error("invalid table name")
     except Error as e:
         main.app.logger.error(f"Error while deleting transaction #{id} from wallet '{wallet}' for user '{user}': {e}")
     finally:
@@ -413,14 +413,14 @@ def get_all_transactions(user):
             year_key = date_obj.year
             month_key = date_obj.strftime('%B')
             day_key = date_obj.day
-            
+
             if year_key not in monthly_data:
                 monthly_data[year_key] = {}
             if month_key not in monthly_data[year_key]:
                 monthly_data[year_key][month_key] = {}
             if day_key not in monthly_data[year_key][month_key]:
                 monthly_data[year_key][month_key][day_key] = []
-            
+
             formatted_trans = float(row[0][:-1])
             balance_snapshot = float(row[1])
             id = row[3]
@@ -435,7 +435,7 @@ def get_all_transactions(user):
                 month_num = datetime.strptime(month_key, '%B').month
                 _, num_days = calendar.monthrange(year_key, month_num)
 
-                last_updated_day_data = None 
+                last_updated_day_data = None
                 for day in range(1, num_days + 1):
                     if datetime(year_key, month_num, day).date() > today:
                         break
@@ -500,4 +500,4 @@ def get_total_balance(user):
         main.app.logger.error(f"Error while retrieving total balance for user '{user}': {e}")
     finally:
         conn.close()
-#By Riccardo Luongo, 10/03/2024
+#By Riccardo Luongo, 22/04/2025
