@@ -1,5 +1,5 @@
 ## COMPATIBILITY
-Currently only tested on Linux. Should work anywhere theorethically.
+Only tested on Linux. Should work anywhere theorethically.
 
 ## INSTALLATION
 Clone the repository:
