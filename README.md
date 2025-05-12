@@ -8,9 +8,11 @@ git clone https://github.com/riccardoluongo/saving/
 cd saving
 ```
 
-Create the logs directory:
+Create the directories for logs and the database:
 ```
-mkdir log
+mkdir -p log/main
+mkdir -p log/access
+mkdir database
 ```
 
 Generate a secure secret key for Flask and add it to the .env file (you will need to create it):
