@@ -21,7 +21,11 @@
       <div class="balance">
           <div class="balance-title">{{ translation['current'] }}</div>
           <div class="balance-value" id="balance-val"></div>
-          <div class="piggy-wrapper"><img src="/static/piggy.png" class="piggy"></img></div>
+          <select class="currency-select" id="currency">
+            <option value="USD">USD</option>
+            <option value="EUR">EUR</option>
+          </select>
+          <span class="piggy-wrapper"><img src="/static/piggy.png" class="piggy"></img></span>
       </div>
   </div>
   <div class="transactions-square" id="transaction-square">

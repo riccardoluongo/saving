@@ -4,14 +4,33 @@ import re
 import main
 from sqlite3 import Error
 from datetime import datetime
+from currency_converter import CurrencyConverter, SINGLE_DAY_ECB_URL
+from json import dumps
+
+converter = CurrencyConverter(SINGLE_DAY_ECB_URL)
+
+CREATE_MAIN_TABLES_COMMAND = """
+    CREATE TABLE IF NOT EXISTS main_transactions (
+        id integer PRIMARY KEY,
+        name text NOT NULL,
+        date text NOT NULL,
+        wallet text NOT NULL,
+        price integer NOT NULL,
+        balance_snapshot text NOT NULL,
+        currency text NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS main_balance (
+        id integer PRIMARY KEY,
+        value integer NOT NULL,
+        currency text NOT NULL
+    ); """
 
 def is_table_name_valid(table):
     pattern = r'^[a-zA-Z_][a-zA-Z0-9_]*$'
-    return True if re.fullmatch(pattern, table) else False
+    forbidden = ["balance", "transactions"]
+    return bool(re.fullmatch(pattern, table) and not any(word in table.lower() for word in forbidden))
 
 def initialize_db(user):
-    global create_main_tables_command
-
     """
     connect to the database,
     create the table if it does not exist
@@ -22,19 +41,6 @@ def initialize_db(user):
         id integer PRIMARY KEY,
         value integer NOT NULL
     ) """
-    create_main_tables_command = """
-    CREATE TABLE IF NOT EXISTS main_transactions (
-        id integer PRIMARY KEY,
-        name text NOT NULL,
-        date text NOT NULL,
-        wallet text NOT NULL,
-        price text NOT NULL,
-        balance_snapshot text NOT NULL
-    );
-    CREATE TABLE IF NOT EXISTS main_balance (
-        id integer PRIMARY KEY,
-        value text NOT NULL
-    ); """
 
     try:
         conn = sqlite3.connect(database_file, check_same_thread=False)
@@ -60,7 +66,7 @@ def initialize_db(user):
     try:
         cur = conn.cursor()
         if len(get_wallets(user)) == 0:
-            cur.executescript(create_main_tables_command)
+            cur.executescript(CREATE_MAIN_TABLES_COMMAND)
             create_initial_rows(user)
     except Error as e:
         main.app.logger.error(f"Error while initializing the main tables for user '{user}': {e}")
@@ -72,7 +78,7 @@ def initialize_db(user):
         value = cur.fetchall()[0][1]
 
         if value == 0:
-            cur.executescript(create_main_tables_command)
+            cur.executescript(CREATE_MAIN_TABLES_COMMAND)
             create_initial_rows(user)
         elif value == 1:
             pass
@@ -116,7 +122,7 @@ def create_initial_rows(user):
         cur.execute("SELECT rowid FROM main_balance WHERE id = 1")
         data=cur.fetchall()
         if len(data)==0:
-            cur.execute("INSERT INTO main_balance(value) VALUES('0$')")
+            cur.execute("INSERT INTO main_balance(value, currency) VALUES(0, 'USD')")
             conn.commit()
     except Error as e:
         main.app.logger.error(f"Error while initializing balance row for user '{user}': {e}")
@@ -154,15 +160,15 @@ def get_balance(wallet, user):
 
     try:
         if is_table_name_valid(wallet):
-            cur.execute(f"SELECT * FROM [{wallet}_balance] WHERE id = 1")
-            balance = cur.fetchall()[0][1]
+            cur.execute(f"SELECT value, currency FROM [{wallet}_balance] WHERE id = 1")
+            balance = cur.fetchall()[0]
             return balance
         else:
             raise Error("invalid table name")
     except Error as e:
         main.app.logger.error(f"Error while retrieving balance from wallet '{wallet}' for user '{user}': {e}")
 
-def create_wallet(name, start_balance, user):
+def create_wallet(name, start_balance, currency, user):
     database_file = r"./database/"+user+".db"
 
     try:
@@ -179,15 +185,17 @@ def create_wallet(name, start_balance, user):
                 name text NOT NULL,
                 date text NOT NULL,
                 wallet text NOT NULL,
-                price text NOT NULL,
-                balance_snapshot text NOT NULL
+                price integer NOT NULL,
+                balance_snapshot text NOT NULL,
+                currency text NOT NULL
             );
             CREATE TABLE IF NOT EXISTS [{name}_balance] (
-            id integer PRIMARY KEY,
-            value text NOT NULL
+                id integer PRIMARY KEY,
+                value integer NOT NULL,
+                currency text NOT NULL
             );
             """)
-            cur.execute(f"INSERT INTO [{name}_balance](value) VALUES(?)", (start_balance+"$",))
+            cur.execute(f"INSERT INTO [{name}_balance](value, currency) VALUES(?, ?)", (start_balance, currency))
             conn.commit()
         else:
             raise Error("invalid table name")
@@ -206,7 +214,7 @@ def get_wallets(user):
         except Error as e:
             main.app.logger.error(f"Error while connecting user '{user} 'to the database: {e}")
 
-        cur.execute("SELECT name FROM sqlite_master WHERE type='table'")
+        cur.execute("SELECT name FROM sqlite_master WHERE type='table'") #TODO look for wallet directly in SQL query
         tables = cur.fetchall()
         conn.commit()
 
@@ -257,9 +265,8 @@ def delete_all(user):
         for wallet in get_wallets(user):
             delete_wallet(wallet,user)
 
-        if len(get_wallets(user)) == 0:
-            cur.executescript(create_main_tables_command)
-            create_initial_rows(user)
+        cur.executescript(CREATE_MAIN_TABLES_COMMAND)
+        create_initial_rows(user)
     except Error as e:
         main.app.logger.error(f"Error while deleting all wallets for user '{user}': {e}")
     finally:
@@ -274,16 +281,15 @@ def add_transaction(name, wallet, value, user):
     except Error as e:
         main.app.logger.error(f"Error while connecting user '{user}' to the database: {e}")
 
-    balance = round(float(get_balance(wallet,user)[:-1]), 2)
-    value = round(float(value), 2)
-    formatted_value = f"+{value}$"
-    update_balance(wallet, f"{round(balance + value, 2)}$", user)
+    old_balance = get_balance(wallet,user)
+    balance = old_balance[0] + value
+    update_balance(wallet, balance, user)
 
     try:
         if is_table_name_valid(wallet):
-            sql = f"INSERT INTO [{wallet}_transactions](name, date, wallet, price, balance_snapshot) VALUES(?, datetime('now'), ?, ?, ?)"
+            sql = f"INSERT INTO [{wallet}_transactions](name, date, wallet, price, balance_snapshot, currency) VALUES(?, datetime('now'), ?, ?, ?, ?)"
 
-            cur.execute(sql, (name, wallet, formatted_value, get_total_balance(user)))
+            cur.execute(sql, (name, wallet, value, dumps(get_wallet_balance_list(user)), old_balance[1]))
             conn.commit()
             return 0
         else:
@@ -303,16 +309,15 @@ def pay_transaction(name, wallet, value, user):
     except Error as e:
         main.app.logger.error(f"Error while connecting user '{user}' to the database: {e}")
 
-    balance = round(float(get_balance(wallet, user)[:-1]), 2)
-    value = round(float(value), 2)
-    formatted_value = f"-{value}$"
-    update_balance(wallet, f"{round(balance - value, 2)}$", user)
+    old_balance = get_balance(wallet,user)
+    balance = old_balance[0] - value
+    update_balance(wallet, balance, user)
 
     try:
         if is_table_name_valid(wallet):
-            sql = f"INSERT INTO [{wallet}_transactions](name, date, wallet, price, balance_snapshot) VALUES(?, datetime('now'), ?, ?, ?)"
+            sql = f"INSERT INTO [{wallet}_transactions](name, date, wallet, price, balance_snapshot, currency) VALUES(?, datetime('now'), ?, ?, ?, ?)"
 
-            cur.execute(sql, (name, wallet, formatted_value, get_total_balance(user)))
+            cur.execute(sql, (name, wallet, -value, dumps(get_wallet_balance_list(user)), old_balance[1]))
             conn.commit()
             return 0
         else:
@@ -337,7 +342,7 @@ def get_transactions(wallet, user, offset, limit):
 
     try:
         if is_table_name_valid(wallet):
-            cur.execute(f"SELECT name,DATE(date),price,wallet,id FROM [{wallet}_transactions]")
+            cur.execute(f"SELECT name,DATE(date),price,wallet,id,currency FROM [{wallet}_transactions]")
             transactions = cur.fetchall()
             transactions.reverse()
 
@@ -368,10 +373,9 @@ def delete_transaction(wallet,id,user):
         if is_table_name_valid(wallet):
             cur.execute(f"SELECT price FROM [{wallet}_transactions] WHERE id = ?", (id,))
             trans_price = cur.fetchall()[0][0]
-            trans_price = float(trans_price[:-1])
 
-            current_balance = round(float(get_balance(wallet, user)[:-1]), 2)
-            update_balance(wallet, f"{round(current_balance-trans_price, 2)}$", user)
+            current_balance = get_balance(wallet, user)[0]
+            update_balance(wallet, current_balance-trans_price, user)
 
             cur.execute(f"DELETE FROM [{wallet}_transactions] WHERE id = ?", (id,))
             conn.commit()
@@ -399,7 +403,7 @@ def get_all_transactions(user):
 
         for table in tables:
             table_name = table[0]
-            query = f"SELECT price, balance_snapshot, date, id, name, wallet FROM [{table_name}];"
+            query = f"SELECT price, balance_snapshot, date, id, name, wallet, currency FROM [{table_name}];"
             cur.execute(query)
             results = cur.fetchall()
             combined_results.extend(results)
@@ -421,13 +425,14 @@ def get_all_transactions(user):
             if day_key not in monthly_data[year_key][month_key]:
                 monthly_data[year_key][month_key][day_key] = []
 
-            formatted_trans = float(row[0][:-1])
-            balance_snapshot = float(row[1])
+            transaction = row[0]
+            balance_snapshot = row[1]
             id = row[3]
             name = row[4]
             wallet = row[5]
+            currency = row[6]
 
-            monthly_data[year_key][month_key][day_key].append([date_obj, formatted_trans, balance_snapshot, id, name, wallet])
+            monthly_data[year_key][month_key][day_key].append([date_obj, transaction, balance_snapshot, id, name, wallet, currency])
             monthly_data[year_key][month_key][day_key].sort(key=lambda x: x[0])
 
         for year_key in monthly_data:
@@ -473,7 +478,7 @@ def get_transactions_list(user, offset, limit):
 
     return paginated_transactions
 
-def get_total_balance(user):
+def get_wallet_balance_list(user):
     database_file = r"./database/"+user+".db"
 
     try:
@@ -486,18 +491,43 @@ def get_total_balance(user):
         cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name LIKE ?;", (f'%balance%',))
         tables = cur.fetchall()
 
-        combined_results = []
+        balance_list = []
 
         for table in tables:
             table_name = table[0]
-            query = f"SELECT value FROM {table_name};"
-            cur.execute(query)
-            results = cur.fetchall()[0]
-            combined_results.append(float(results[0][:-1]))
+            cur.execute(f"SELECT value, currency FROM {table_name};")
+            balance_list.append(cur.fetchall()[0])
 
-        return round(sum(combined_results),2)
+        return balance_list
+    except Error as e:
+        main.app.logger.error(f"Error while retrieving list of wallets' balance for user '{user}': {e}")
+    finally:
+        conn.close()
+
+def get_total_balance(user, currency):
+    database_file = r"./database/"+user+".db"
+
+    try:
+        conn = sqlite3.connect(database_file, check_same_thread=False)
+        cur = conn.cursor()
+    except Error as e:
+        main.app.logger.error(f"Error while connecting user '{user}' to the database: {e}")
+
+    try:
+        cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name LIKE ?;", (f'%balance%',))
+        tables = cur.fetchall()
+
+        balance_list = []
+
+        for table in tables:
+            table_name = table[0]
+            cur.execute(f"SELECT value, currency FROM {table_name};")
+            wallet_balance, wallet_currency = cur.fetchall()[0]
+            balance_list.append(converter.convert(wallet_balance, wallet_currency, currency))
+
+        return sum(balance_list)
     except Error as e:
         main.app.logger.error(f"Error while retrieving total balance for user '{user}': {e}")
     finally:
         conn.close()
-#By Riccardo Luongo, 22/04/2025
+#By Riccardo Luongo, 15/05/2025

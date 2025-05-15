@@ -69,5 +69,10 @@
     "conf_psw" : "Conferma password",
     "no_balance" : "Saldo non disponibile!",
     "del_transaction_confirm" : "Eliminare la transazione?",
-    "bal_header" : "Balance"
+    "bal_header" : "Saldo",
+    "currency" : "Valuta",
+    "no_api" : "API di conversione valuta non disponibile",
+    "no_api_connection" : "Impossibile connettersi alla API di conversione valuta,\nassicurati di essere connesso a internet",
+    "all_transactions_err" : "Transazioni non disponibili.\nControlla le log per ulteriori informazioni",
+    "total_balance_err" : "Saldo totale non disponibile.\nControlla le log per ulteriori informazioni."
 }

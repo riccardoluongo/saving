@@ -42,6 +42,10 @@
                     <input type="text" id="wallet-name" autocomplete="off" autofocus minlength="1"><br>
                     <label for="wallet-start-balance">{{ translation['start_val'] }}</label><br>
                     <input type="number" id="wallet-start-balance" value="0" autocomplete="off" min="0" step="0.01">
+                    <select id="currency">
+                      <option value="USD">USD</option>
+                      <option value="EUR">EUR</option>
+                    </select>
                   </div>
                     <div class="modal-footer" style="margin-top: 10px;">
                         <button type="submit" class="btn btn-primary" data-bs-dismiss="modal">{{ translation['save'] }}</button>

@@ -9,6 +9,7 @@ function new_wallet() {
 
         const name = document.getElementById("wallet-name");
         const start_balance = document.getElementById("wallet-start-balance");
+        const currency = document.getElementById("currency");
 
         const regex = /^[A-Za-z0-9_]+$/;
 
@@ -18,7 +19,11 @@ function new_wallet() {
             }
             else{
                 if(regex.test(name.value)){
-                    fetch(`/new_wallet?name=${name.value}&start_value=${start_balance.value}`)
+                    fetch(`/new_wallet`, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify([name.value,start_balance.value * 100,currency.value])
+                    })
                     .then(function(response) {
                         if (!response.ok) {
                             alert(translation["wallet_exists"]);
@@ -77,6 +82,7 @@ function updateWalletTable() {
             actions_column.innerText = translation["actions_header"];
 
             for (const wallet in data) {
+                let currency = "$";
                 const row = table.appendChild(document.createElement('tr'));
                 
                 const name_td = row.appendChild(document.createElement('td'));
@@ -85,11 +91,12 @@ function updateWalletTable() {
 
                 const balance_td = row.appendChild(document.createElement('td'));
                 balance_td.setAttribute('class', 'balance-td');
-                
                 fetch(`/balance?wallet=${data[wallet]}`)
                     .then(response => response.json())
                     .then(data => {
-                        balance_td.innerText = data
+                        if(data[1] == "EUR")
+                            currency = "€";
+                        balance_td.innerText = data[0]/100 + currency;
                     })
                                     
                 const actions_td = row.appendChild(document.createElement('td'));
@@ -136,4 +143,4 @@ window.onload = function() {
         })
     })
 }
-//By Riccardo Luongo, 26/03/2025
+//By Riccardo Luongo, 14/05/2025
