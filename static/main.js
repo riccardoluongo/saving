@@ -1,5 +1,5 @@
 let translation = null;
-let currency = null;
+
 function setAttributes(el, attrs) {
     for (let key in attrs) {
         el.setAttribute(key, attrs[key]);
@@ -7,23 +7,36 @@ function setAttributes(el, attrs) {
 }
 
 function updateBalance(){
-    const select_value = document.getElementById('wallet-selector').value;
-    if(select_value == "Totalbalance"){
-        fetch(`/total_balance`)
+    const selectedWallet = document.getElementById('wallet-selector').value;
+    const currency = document.getElementById("currency");
+    
+    if(selectedWallet == "Totalbalance"){
+        fetch(`/total_balance?currency=${currency.value}`)
         .then((response) => response.json())
         .then((data) => {
-            const balance_div = document.getElementById("balance-val");
-            balance_div.innerText = data + currency;
-            updateTransactionTable("date", 1);
+            const balanceDiv = document.getElementById("balance-val");
+            const currencySymbol = currency.value == 'EUR' ? '€' : '$';
+            currency.setAttribute('onchange', `updateBalance()`);
+            currency.style.display = '';
+
+            balanceDiv.innerText = (parseFloat(data)/100).toFixed(2) + currencySymbol;
+            updateTransactionTable("date", 1, currencySymbol);
         })
     }
     else{
-        fetch(`/balance?wallet=${select_value}`)
+        currency.style.display = 'none';
+
+        fetch(`/balance?wallet=${selectedWallet}`)
         .then((response) => response.json())
         .then((data) => {
-            const balance_div = document.getElementById("balance-val");
-            balance_div.innerText = data.slice(0, -1) + currency;
-            updateTransactionTable("date", 1);
+            const balanceDiv = document.getElementById("balance-val");
+            const balance = parseFloat(data[0]) / 100
+            let currency = "$";
+            if(data[1] == "EUR")
+                currency = "€";
+
+            balanceDiv.innerText = balance + currency;
+            updateTransactionTable("date", 1, currency);
         })
     }
 }
@@ -32,45 +45,49 @@ function updateWalletSelector() {
     fetch('/wallets')
         .then((response) => response.json())
         .then((data) => {
-            const selector = document.getElementById('wallet-selector');
+            const walletSelector = document.getElementById('wallet-selector');
 
             for(const wallet in data) {
-                const option = selector.appendChild(document.createElement('option'));
+                const option = walletSelector.appendChild(document.createElement('option'));
                 option.setAttribute('value', data[wallet]);
                 option.innerText = data[wallet];
             }
 
-            selector.options[0].selected = true;
+            walletSelector.options[0].selected = true;
             updateBalance();
         })
 }
 
 function addMoney() {
-    const add_form = document.getElementById('add-form');
-    add_form.addEventListener("submit", (e) => {
+    const addMoneyForm = document.getElementById('add-form');
+    addMoneyForm.addEventListener("submit", (e) => {
         e.preventDefault();
 
-        const name = document.getElementById("add-transaction-name").value
+        const name = document.getElementById("add-transaction-name").value;
         const wallet = document.getElementById('wallet-selector').value;
         const value = document.getElementById("add-transaction-value").value;
 
         if (name != "" && value != "") {
-            fetch(`/add?name=${name}&wallet=${wallet}&value=${value}`)
-                .then(function(response) {
-                    if (!response.ok) {
-                        return response.text();
-                    }
-                    else{
-                        updateBalance();
-                        name = "";
-                        value = 0;
-                    }
-                })//fix unfocusable form control
-                .then((data) => {
-                    if(data){
-                        alert(data);
-                    }
-                })
+            fetch("/add", {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify([name,wallet,value])
+            })
+            .then(function(response) {
+                if (!response.ok) {
+                    return response.text();
+                }
+                else{
+                    updateBalance();
+                    name = "";
+                    value = 0;
+                }
+            })//fix unfocusable form control
+            .then((data) => {
+                if(data){
+                    alert(data);
+                }
+            })
         } else {
             alert(translation["empty_fields"]);
         }
@@ -80,8 +97,8 @@ function addMoney() {
 }
 
 function pay() {
-    const add_form = document.getElementById('pay-form');
-    add_form.addEventListener("submit", (e) => {
+    const payForm = document.getElementById('pay-form');
+    payForm.addEventListener("submit", (e) => {
         e.preventDefault();
 
         const name = document.getElementById("pay-transaction-name").value
@@ -92,12 +109,15 @@ function pay() {
             fetch(`/balance?wallet=${wallet}`)
             .then((response) => response.json())
             .then((data) => {
-                const balance = data.substring(0, data.length - 1);
-                if(parseFloat(value) > parseFloat(balance)){
+                if(value > data[0]/100){
                     alert(translation["no_balance"]);
                 }
                 else{
-                    fetch(`/pay?name=${name}&wallet=${wallet}&value=${value}`)//use POST
+                    fetch("/pay", {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify([name,wallet,value])
+                    })
                     .then(function(response) {
                         if (!response.ok) {
                             return response.text();
@@ -115,16 +135,20 @@ function pay() {
                 document.getElementById("pay-transaction-name").value = "";
                 document.getElementById("pay-transaction-value").value = 0;
             })
-        } 
+        }
         else {
             alert(translation["empty_fields"]);
         }
     });
 }
 
-function delete_trans(wallet, id){
+function deleteTransaction(wallet, id){
     if(confirm(translation["del_transaction_confirm"])){
-        fetch(`/delete_transaction?wallet=${wallet}&id=${id}`)
+        fetch("/delete_transaction", {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify([wallet,id])
+        })
         .then(function(){
             updateBalance();
         })
@@ -170,7 +194,7 @@ function whiteBtn(id){
     document.getElementById(id).style.color = "white"
 }
 
-function calculatePages(data){
+function calculatePages(data, currency){
     const pageBtnContainer = document.getElementById('page-btn-wrapper');
     const rowsPerPageSelector = document.getElementById('items-page');
 
@@ -189,7 +213,7 @@ function calculatePages(data){
             const btn = pageBtnContainer.appendChild(document.createElement('span'));
             btn.innerText = i;
 
-            btn.setAttribute("onclick", `updateTransactionTable('date',${i})`);
+            btn.setAttribute("onclick", `updateTransactionTable('date',${i})`, currency);
             btn.setAttribute("id", `btn-${i}`);
             btn.classList.add('page-btn');
         }
@@ -200,7 +224,7 @@ function calculatePages(data){
 
 var nameSortCounter = walletSortCounter = valueSortCounter = dateSortCounter = 0;
 
-function updateTransactionTable(sortMode, page) {
+function updateTransactionTable(sortMode, page, currency) {
     const wallet = document.getElementById('wallet-selector').value;
     const rowsPerPageSelector = document.getElementById('items-page');
     rowsPerPageSelector.setAttribute("onchange", `updateTransactionTable("date", 1)`);
@@ -210,7 +234,7 @@ function updateTransactionTable(sortMode, page) {
         fetch(`/transactions_list?offset=0&limit=0`)
         .then(response => response.json())
         .then(data => {
-            calculatePages(data);
+            calculatePages(data, currency);
             document.getElementById(`btn-${page}`).style.color = "white";
         })
 
@@ -222,12 +246,12 @@ function updateTransactionTable(sortMode, page) {
                 buttons.remove();
             }
     
-            const balance_container = document.getElementById("main-square");
-            balance_container.style.height = "7rem";
+            const balanceContainer = document.getElementById("main-square");
+            balanceContainer.style.height = "7rem";
     
-            const trans_table_container = document.getElementById("transaction-square");
-            trans_table_container.style.height = "75%";
-            trans_table_container.style.top = "10.8rem";
+            const transactionTableContainer = document.getElementById("transaction-square");
+            transactionTableContainer.style.height = "75%";
+            transactionTableContainer.style.top = "10.8rem";
     
             const table = document.getElementById('trans-table');
     
@@ -235,22 +259,22 @@ function updateTransactionTable(sortMode, page) {
                 table.removeChild(table.firstChild);
             }
     
-            const title_row = table.appendChild(document.createElement('tr'));
-            const name_column = title_row.appendChild(document.createElement('th'));
-            const wallet_column = title_row.appendChild(document.createElement('th'));
-            const value_column = title_row.appendChild(document.createElement('th'));
+            const titleRow = table.appendChild(document.createElement('tr'));
+            const nameColumn = titleRow.appendChild(document.createElement('th'));
+            const walletColumn = titleRow.appendChild(document.createElement('th'));
+            const valueColumn = titleRow.appendChild(document.createElement('th'));
     
-            name_column.innerText = translation["name_sorter"].slice(0, -1);
-            name_column.setAttribute('class', 'name-column');
-            name_column.setAttribute("onclick", `updateTransactionTable("name", ${page}); nameSortCounter+=1`);
+            nameColumn.innerText = translation["name_sorter"].slice(0, -1);
+            nameColumn.setAttribute('class', 'name-column');
+            nameColumn.setAttribute("onclick", `updateTransactionTable("name", ${page}, '${currency}'); nameSortCounter+=1`);
             
-            wallet_column.innerText = translation["wallet_sorter"];
-            wallet_column.setAttribute('class', 'wallet-column');
-            wallet_column.setAttribute("onclick", `updateTransactionTable("wallet", ${page}); walletSortCounter+=1`);
+            walletColumn.innerText = translation["wallet_sorter"];
+            walletColumn.setAttribute('class', 'wallet-column');
+            walletColumn.setAttribute("onclick", `updateTransactionTable("wallet", ${page}, '${currency}'); walletSortCounter+=1`);
     
-            value_column.innerText = translation["value_sorter"].slice(0, -1);
-            value_column.setAttribute('class', 'value-column');
-            value_column.setAttribute("onclick", `updateTransactionTable("value", ${page}); valueSortCounter+=1`);
+            valueColumn.innerText = translation["value_sorter"].slice(0, -1);
+            valueColumn.setAttribute('class', 'value-column');
+            valueColumn.setAttribute("onclick", `updateTransactionTable("value", ${page}, '${currency}'); valueSortCounter+=1`);
 
             data.sort((a, b) => {
                 const dateA = new Date(a[0]);
@@ -315,32 +339,31 @@ function updateTransactionTable(sortMode, page) {
             for(const transaction in data){
                 const row = table.appendChild(document.createElement('tr'));
 
-                const name_td = row.appendChild(document.createElement('td'));
-                name_td.setAttribute('class', 'trans-name-td')
-                name_td.innerText = data[transaction][4]
+                const nameColumn = row.appendChild(document.createElement('td'));
+                nameColumn.setAttribute('class', 'trans-name-td')
+                nameColumn.innerText = data[transaction][4]
 
-                const wallet_td = row.appendChild(document.createElement('td'));
-                wallet_td.setAttribute('class', 'trans-date-td');
-                wallet_td.innerText = data[transaction][5]
+                const walletColumn = row.appendChild(document.createElement('td'));
+                walletColumn.setAttribute('class', 'trans-date-td');
+                walletColumn.innerText = data[transaction][5]
 
-                const value_td = row.appendChild(document.createElement('td'));
-                value_td.setAttribute('class', 'trans-value-td');
-                if(parseFloat(data[transaction][1])>0){
-                    value_td.innerText = `+${data[transaction][1] + currency}`;
-                }
-                else{
-                    value_td.innerText = `${data[transaction][1] + currency}`;
-                }
+                const valueColumn = row.appendChild(document.createElement('td'));
+                valueColumn.setAttribute('class', 'trans-value-td');
+                const value = data[transaction][1]/100;
+                if(value > 0)
+                    valueColumn.innerText = `+${value.toString() + currency}`;
+                else
+                    valueColumn.innerText = value.toString() + currency;
 
-                const actions_td = row.appendChild(document.createElement('td'));
-                actions_td.setAttribute('class', 'trans-actions-td');
+                const actionsColumn = row.appendChild(document.createElement('td'));
+                actionsColumn.setAttribute('class', 'trans-actions-td');
 
-                const del_href = actions_td.appendChild(document.createElement('a'));
-                del_href.setAttribute('onclick', `delete_trans('${data[transaction][5]}', ${data[transaction][3]})`);
-                const del_btn = del_href.appendChild(document.createElement('button'));
-                setAttributes(del_btn, {'class' : 'del-btn3', 'title' : 'Delete'});
-                const del_btn_icon = del_btn.appendChild(document.createElement('i'));
-                del_btn_icon.setAttribute('class', 'fa fa-trash del-btn-icon');
+                const deleteColumn = actionsColumn.appendChild(document.createElement('a'));
+                deleteColumn.setAttribute('onclick', `deleteTransaction('${data[transaction][5]}', ${data[transaction][3]})`);
+                const deleteButton = deleteColumn.appendChild(document.createElement('button'));
+                setAttributes(deleteButton, {'class' : 'del-btn3', 'title' : 'Delete'});
+                const deleteButtonIcon = deleteButton.appendChild(document.createElement('i'));
+                deleteButtonIcon.setAttribute('class', 'fa fa-trash del-btn-icon');
             }
         })
     }
@@ -355,32 +378,32 @@ function updateTransactionTable(sortMode, page) {
         fetch(`/get_transactions?wallet=${wallet}&offset=${offset}&limit=${rowsPerPageSelector.value}`)
         .then(response => response.json())
         .then(data => {
-            const main_square = document.getElementById("main-square");
-            main_square.style.height = "10.5rem";
+            const mainSquare = document.getElementById("main-square");
+            mainSquare.style.height = "10.5rem";
 
-            const buttons_div = document.getElementById("buttons");
-            if(buttons_div){
-                buttons_div.remove();
+            const buttonsDiv = document.getElementById("buttons");
+            if(buttonsDiv){
+                buttonsDiv.remove();
             }
 
-            const buttons = main_square.appendChild(document.createElement("div"));
+            const buttons = mainSquare.appendChild(document.createElement("div"));
             setAttributes(buttons, {'id':'buttons', 'class':'buttons'});
 
-            const add_button_div = buttons.appendChild(document.createElement("div"));
-            add_button_div.setAttribute('class', 'pay-buttons');
-            add_button = add_button_div.appendChild(document.createElement("button"));
-            setAttributes(add_button, {'type':'button', 'class':'btn btn-primary btn-lg btn-block palle', 'data-bs-toggle':'modal', 'data-bs-target':'#addModal'});
-            add_button.innerText = translation["add_btn"];
+            const addButtonDiv = buttons.appendChild(document.createElement("div"));
+            addButtonDiv.setAttribute('class', 'pay-buttons');
+            const addButton = addButtonDiv.appendChild(document.createElement("button"));
+            setAttributes(addButton, {'type':'button', 'class':'btn btn-primary btn-lg btn-block palle', 'data-bs-toggle':'modal', 'data-bs-target':'#addModal'});
+            addButton.innerText = translation["add_btn"];
 
-            const pay_button_div = buttons.appendChild(document.createElement("div"));
-            pay_button_div.setAttribute('class', 'pay-buttons');
-            pay_button = pay_button_div.appendChild(document.createElement("button"));
-            setAttributes(pay_button, {'type':'button', 'class':'btn btn-primary btn-lg btn-block palle', 'data-bs-toggle':'modal', 'data-bs-target':'#payModal'});
-            pay_button.innerText = translation["pay_btn"];
+            const payButtonDiv = buttons.appendChild(document.createElement("div"));
+            payButtonDiv.setAttribute('class', 'pay-buttons');
+            const payButton = payButtonDiv.appendChild(document.createElement("button"));
+            setAttributes(payButton, {'type':'button', 'class':'btn btn-primary btn-lg btn-block palle', 'data-bs-toggle':'modal', 'data-bs-target':'#payModal'});
+            payButton.innerText = translation["pay_btn"];
 
-            const trans_table_container = document.getElementById("transaction-square");
-            trans_table_container.style.height = "70%";
-            trans_table_container.style.top = "14.3rem";
+            const transactionTableContainer = document.getElementById("transaction-square");
+            transactionTableContainer.style.height = "70%";
+            transactionTableContainer.style.top = "14.3rem";
 
             const table = document.getElementById('trans-table');
 
@@ -388,22 +411,22 @@ function updateTransactionTable(sortMode, page) {
                 table.removeChild(table.firstChild);
             }
 
-            const title_row = table.appendChild(document.createElement('tr'));
-            const name_column = title_row.appendChild(document.createElement('th'));
-            const date_column = title_row.appendChild(document.createElement('th'));
-            const value_column = title_row.appendChild(document.createElement('th'));
+            const titleRow = table.appendChild(document.createElement('tr'));
+            const nameColumn = titleRow.appendChild(document.createElement('th'));
+            const dateColumn = titleRow.appendChild(document.createElement('th'));
+            const valueColumn = titleRow.appendChild(document.createElement('th'));
 
-            name_column.innerText = translation["name_sorter"].slice(0, -1);
-            name_column.setAttribute('class', 'name-column')
-            name_column.setAttribute("onclick", `updateTransactionTable("name", ${page}); nameSortCounter+=1`)
+            nameColumn.innerText = translation["name_sorter"].slice(0, -1);
+            nameColumn.setAttribute('class', 'name-column');
+            nameColumn.setAttribute("onclick", `updateTransactionTable("name", ${page}, '${currency}'); nameSortCounter+=1`)
             
-            date_column.innerText = translation["date_sorter"];
-            date_column.setAttribute('class', 'date-column')
-            date_column.setAttribute("onclick", `updateTransactionTable("date", ${page}); dateSortCounter+=1`)
+            dateColumn.innerText = translation["date_sorter"];
+            dateColumn.setAttribute('class', 'date-column');
+            dateColumn.setAttribute("onclick", `updateTransactionTable("date", ${page}, '${currency}'); dateSortCounter+=1`)
 
-            value_column.innerText = translation["value_sorter"].slice(0, -1);
-            value_column.setAttribute('class', 'value-column')
-            value_column.setAttribute("onclick", `updateTransactionTable("value", ${page}); valueSortCounter+=1`)
+            valueColumn.innerText = translation["value_sorter"].slice(0, -1);
+            valueColumn.setAttribute('class', 'value-column');
+            valueColumn.setAttribute("onclick", `updateTransactionTable("value", ${page}, '${currency}'); valueSortCounter+=1`)
 
             let transactions = data;
             const selectedSort = document.getElementsByClassName(`${sortMode}-column`)[0];
@@ -459,10 +482,10 @@ function updateTransactionTable(sortMode, page) {
                 dateSortCounter = 0;
 
                 if(valueSortCounter%2 != 0){
-                    transactions.sort((a, b) => Math.abs(a[2].slice(1, -1)) - Math.abs(b[2].slice(1, -1)));
+                    transactions.sort((a, b) => Math.abs(a[2]) - Math.abs(b[2]));
                 }
                 else{
-                    transactions.sort((a, b) => Math.abs(b[2].slice(1, -1)) - Math.abs(a[2].slice(1, -1)));
+                    transactions.sort((a, b) => Math.abs(b[2]) - Math.abs(a[2]));
                 }
 
                 selectedSort.appendChild(arrow);
@@ -476,27 +499,31 @@ function updateTransactionTable(sortMode, page) {
             for(const transaction in transactions) {
                 const row = table.appendChild(document.createElement('tr'));
 
-                const name_td = row.appendChild(document.createElement('td'));
-                name_td.setAttribute('class', 'trans-name-td')
-                name_td.innerText = data[transaction][0]
+                const nameColumn = row.appendChild(document.createElement('td'));
+                nameColumn.setAttribute('class', 'trans-name-td')
+                nameColumn.innerText = data[transaction][0]
 
-                const date_td = row.appendChild(document.createElement('td'));
-                date_td.setAttribute('class', 'trans-date-td');
-                date_td.innerText = data[transaction][1]
+                const dateColumn = row.appendChild(document.createElement('td'));
+                dateColumn.setAttribute('class', 'trans-date-td');
+                dateColumn.innerText = data[transaction][1]
 
-                const value_td = row.appendChild(document.createElement('td'));
-                value_td.setAttribute('class', 'trans-value-td');
-                value_td.innerText = data[transaction][2].slice(0, -1) + currency;
+                const valueColumn = row.appendChild(document.createElement('td'));
+                valueColumn.setAttribute('class', 'trans-value-td');
+                const value = data[transaction][2]/100;
+                if(value > 0)
+                    valueColumn.innerText = `+${value.toString() + currency}`;
+                else
+                    valueColumn.innerText = value.toString() + currency;
 
-                const actions_td = row.appendChild(document.createElement('td'));
-                actions_td.setAttribute('class', 'trans-actions-td');
+                const actionsColumn = row.appendChild(document.createElement('td'));
+                actionsColumn.setAttribute('class', 'trans-actions-td');
 
-                const del_href = actions_td.appendChild(document.createElement('a'));
-                del_href.setAttribute('onclick', `delete_trans('${data[transaction][3]}', ${data[transaction][4]})`);
-                const del_btn = del_href.appendChild(document.createElement('button'));
-                setAttributes(del_btn, {'class' : 'del-btn3', 'title' : 'Delete'});
-                const del_btn_icon = del_btn.appendChild(document.createElement('i'));
-                del_btn_icon.setAttribute('class', 'fa fa-trash del-btn-icon');
+                const deleteLink = actionsColumn.appendChild(document.createElement('a'));
+                deleteLink.setAttribute('onclick', `deleteTransaction('${data[transaction][3]}', ${data[transaction][4]})`);
+                const deleteButton = deleteLink.appendChild(document.createElement('button'));
+                setAttributes(deleteButton, {'class' : 'del-btn3', 'title' : 'Delete'});
+                const deleteButtonIcon = deleteButton.appendChild(document.createElement('i'));
+                deleteButtonIcon.setAttribute('class', 'fa fa-trash del-btn-icon');
             }
         })
     }
@@ -524,7 +551,6 @@ window.onload = function() {
     fetch("/current_lang")
     .then((response) => response.json())
     .then((data) => {
-        currency = data == "ita" ? "€" : "$";
         fetch(`/translations?lang=${data}`).then((response) => response.json())
         .then((data) => {
             translation = data;
@@ -536,4 +562,4 @@ window.onload = function() {
         })
     })
 }
-//By Riccardo Luongo, 02/04/2025
+//Riccardo Luongo, 15/05/2025

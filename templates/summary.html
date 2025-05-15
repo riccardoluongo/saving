@@ -17,7 +17,13 @@
     <i class="fa fa-user menu-btn2 fa-2x" aria-hidden="true" onclick="openNav2()"></i>
     <div class="summary-container">
         <div class="graph" id="graph"></div>
-        <select class="choose-month" id="month-selector"></select>
+        <div class="selector-container">
+            <select class="choose-month" id="month-selector"></select>
+            <select class="choose-currency" id="currency-selector">
+                <option value="USD">USD</option>
+                <option value="EUR">EUR</option>
+            </select>
+        </div>
     </div>
     <div class="summary-table-container">
         <table class="summary-table">

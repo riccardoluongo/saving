@@ -69,5 +69,10 @@
     "conf_psw" : "Confirm password",
     "no_balance" : "Not enough balance!",
     "del_transaction_confirm" : "Are you sure you want to delete this transaction?",
-    "bal_header" : "Balance"
+    "bal_header" : "Balance",
+    "currency" : "Currency",
+    "no_api" : "Currency conversion API unavailable",
+    "no_api_connection" : "Couldn't connect to currency conversion API,\nare you connected to the internet?",
+    "all_transactions_err" : "Couldn't retrieve transactions.\nCheck the logs for further information",
+    "total_balance_err" : "Couldn't retrieve total balance.\nCheck the logs for further information."
 }
