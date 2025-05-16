@@ -48205,8 +48205,8 @@ async function updateChart(){
     const totalBalance = await totalBalancePromise.json();
     const lastDate = graphData.slice(-1)[0][0];
     graphData.splice(-1);
-    graphData.push([lastDate, totalBalance/100]);                        
-    
+    graphData.push([lastDate, totalBalance/100]);
+
     let dataSet = anychart.data.set(graphData);
     let firstSeriesData = dataSet.mapAs({x: 0, value: 1});
     let chart = anychart.line();
@@ -48356,4 +48356,4 @@ window.onload = function() {
         })
     })
 }
-//Riccardo Luongo, 15/05/2025
+//Riccardo Luongo, 16/05/2025

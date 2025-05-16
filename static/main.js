@@ -9,7 +9,7 @@ function setAttributes(el, attrs) {
 function updateBalance(){
     const selectedWallet = document.getElementById('wallet-selector').value;
     const currency = document.getElementById("currency");
-    
+
     if(selectedWallet == "Totalbalance"){
         fetch(`/total_balance?currency=${currency.value}`)
         .then((response) => response.json())
@@ -222,7 +222,7 @@ function calculatePages(data, currency){
     checkScrollPosition();
 }
 
-var nameSortCounter = walletSortCounter = valueSortCounter = dateSortCounter = 0;
+let nameSortCounter = walletSortCounter = valueSortCounter = dateSortCounter = 0;
 
 function updateTransactionTable(sortMode, page, currency) {
     const wallet = document.getElementById('wallet-selector').value;
@@ -245,33 +245,33 @@ function updateTransactionTable(sortMode, page, currency) {
             if(buttons){
                 buttons.remove();
             }
-    
+
             const balanceContainer = document.getElementById("main-square");
             balanceContainer.style.height = "7rem";
-    
+
             const transactionTableContainer = document.getElementById("transaction-square");
             transactionTableContainer.style.height = "75%";
             transactionTableContainer.style.top = "10.8rem";
-    
+
             const table = document.getElementById('trans-table');
-    
+
             while(table.firstChild) {
                 table.removeChild(table.firstChild);
             }
-    
+
             const titleRow = table.appendChild(document.createElement('tr'));
             const nameColumn = titleRow.appendChild(document.createElement('th'));
             const walletColumn = titleRow.appendChild(document.createElement('th'));
             const valueColumn = titleRow.appendChild(document.createElement('th'));
-    
+
             nameColumn.innerText = translation["name_sorter"].slice(0, -1);
             nameColumn.setAttribute('class', 'name-column');
             nameColumn.setAttribute("onclick", `updateTransactionTable("name", ${page}, '${currency}'); nameSortCounter+=1`);
-            
+
             walletColumn.innerText = translation["wallet_sorter"];
             walletColumn.setAttribute('class', 'wallet-column');
             walletColumn.setAttribute("onclick", `updateTransactionTable("wallet", ${page}, '${currency}'); walletSortCounter+=1`);
-    
+
             valueColumn.innerText = translation["value_sorter"].slice(0, -1);
             valueColumn.setAttribute('class', 'value-column');
             valueColumn.setAttribute("onclick", `updateTransactionTable("value", ${page}, '${currency}'); valueSortCounter+=1`);
@@ -279,7 +279,7 @@ function updateTransactionTable(sortMode, page, currency) {
             data.sort((a, b) => {
                 const dateA = new Date(a[0]);
                 const dateB = new Date(b[0]);
-                
+
                 return dateB - dateA;
             });
 
@@ -419,7 +419,7 @@ function updateTransactionTable(sortMode, page, currency) {
             nameColumn.innerText = translation["name_sorter"].slice(0, -1);
             nameColumn.setAttribute('class', 'name-column');
             nameColumn.setAttribute("onclick", `updateTransactionTable("name", ${page}, '${currency}'); nameSortCounter+=1`)
-            
+
             dateColumn.innerText = translation["date_sorter"];
             dateColumn.setAttribute('class', 'date-column');
             dateColumn.setAttribute("onclick", `updateTransactionTable("date", ${page}, '${currency}'); dateSortCounter+=1`)
@@ -458,7 +458,7 @@ function updateTransactionTable(sortMode, page, currency) {
                     transactions.sort((a, b) => {
                         const dateA = new Date(a[0]);
                         const dateB = new Date(b[0]);
-                        
+
                         return dateB - dateA;
                     })
                 }
@@ -468,7 +468,7 @@ function updateTransactionTable(sortMode, page, currency) {
                         const dateB = new Date(b[0]);
 
                         return dateB - dateA;
-                    });                
+                    });
                     transactions = transactions.reverse();
                 }
 

@@ -5,7 +5,7 @@ function hasWhiteSpace(s) {
 function validateForm(event){
     const username = document.getElementsByName("username")[0].value;
     const password = document.getElementsByName("password")[0].value;
-    const password_confirm = document.getElementsByName("password-confirm")[0].value;
+    const passwordConfirm = document.getElementsByName("password-confirm")[0].value;
 
     if(hasWhiteSpace(username)){
         event.preventDefault();
@@ -13,7 +13,7 @@ function validateForm(event){
         return;
     }
 
-    if(hasWhiteSpace(password) || hasWhiteSpace(password_confirm)){
+    if(hasWhiteSpace(password) || hasWhiteSpace(passwordConfirm)){
         event.preventDefault();
         alert(translation["password_no_spaces"]);
     }
@@ -29,4 +29,4 @@ window.onload = function(){
         translation = data;
     })
 }
-//By Riccardo Luongo, 19/03/2025
+//Riccardo Luongo, 16/05/2025
