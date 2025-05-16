@@ -297,7 +297,7 @@ function updateTransactionTable(sortMode, page, currency) {
                 else{
                     data.sort((a, b) => a[4].localeCompare(b[4]));
                 }
-                
+
                 selectedSort.appendChild(arrow);
                 arrow.innerText = nameSortCounter%2 == 0 ? " \u2191" : " \u2193";
             }

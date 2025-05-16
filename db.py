@@ -214,14 +214,13 @@ def get_wallets(user):
         except Error as e:
             main.app.logger.error(f"Error while connecting user '{user} 'to the database: {e}")
 
-        cur.execute("SELECT name FROM sqlite_master WHERE type='table'") #TODO look for wallet directly in SQL query
+        cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name LIKE ?;", (f'%balance%',))
         tables = cur.fetchall()
         conn.commit()
 
         wallets = []
         for table in tables:
-            if 'balance' in table[0]:
-                wallets.append(get_wallet_name(table[0]))
+            wallets.append(get_wallet_name(table[0]))
 
         return wallets
     except Error as e:
@@ -530,4 +529,4 @@ def get_total_balance(user, currency):
         main.app.logger.error(f"Error while retrieving total balance for user '{user}': {e}")
     finally:
         conn.close()
-#By Riccardo Luongo, 15/05/2025
+#Riccardo Luongo, 16/05/2025
