@@ -377,13 +377,13 @@ function updateTransactionTable(sortMode, page, currency) {
             const addButtonDiv = buttons.appendChild(document.createElement("div"));
             addButtonDiv.setAttribute('class', 'pay-buttons');
             const addButton = addButtonDiv.appendChild(document.createElement("button"));
-            setAttributes(addButton, {'type':'button', 'class':'btn btn-primary btn-lg btn-block palle', 'data-bs-toggle':'modal', 'data-bs-target':'#addModal'});
+            setAttributes(addButton, {'type':'button', 'class':'btn btn-primary btn-lg btn-block transaction-btn', 'data-bs-toggle':'modal', 'data-bs-target':'#addModal'});
             addButton.innerText = translation["add_btn"];
 
             const payButtonDiv = buttons.appendChild(document.createElement("div"));
             payButtonDiv.setAttribute('class', 'pay-buttons');
             const payButton = payButtonDiv.appendChild(document.createElement("button"));
-            setAttributes(payButton, {'type':'button', 'class':'btn btn-primary btn-lg btn-block palle', 'data-bs-toggle':'modal', 'data-bs-target':'#payModal'});
+            setAttributes(payButton, {'type':'button', 'class':'btn btn-primary btn-lg btn-block transaction-btn', 'data-bs-toggle':'modal', 'data-bs-target':'#payModal'});
             payButton.innerText = translation["pay_btn"];
 
             const transactionTableContainer = document.getElementById("transaction-square");
