@@ -58,100 +58,84 @@ function updateWalletSelector() {
         })
 }
 
-function addMoney() {
-    const addMoneyForm = document.getElementById('add-form');
-    addMoneyForm.addEventListener("submit", (e) => {
-        e.preventDefault();
+function addMoney(event) {
+    event.preventDefault();
 
-        const name = document.getElementById("add-transaction-name").value;
-        const wallet = document.getElementById('wallet-selector').value;
-        const value = document.getElementById("add-transaction-value").value;
+    const name = document.getElementById("add-transaction-name").value;
+    const wallet = document.getElementById('wallet-selector').value;
+    const value = document.getElementById("add-transaction-value").value;
 
-        if (name != "" && value != "") {
-            fetch("/add", {
+    if (name != "" && value != "") {
+        fetch("/add", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken' : token
+            },
+            body: JSON.stringify([name,wallet,value])
+        })
+        .then((response) => {
+            if(response.ok)
+            updateBalance();
+            else
+            response.text().then(alert(translation["transaction_err"]));
+        })
+    } else{
+        alert(translation["empty_fields"]);
+    }
+
+    name = "";
+    value = 0;
+}
+
+function pay(event) {
+    event.preventDefault();
+
+    const nameDiv = document.getElementById("pay-transaction-name");
+    const name = nameDiv.value;
+    const valueDiv = document.getElementById("pay-transaction-value");
+    const value = valueDiv.value;
+    const wallet = document.getElementById('wallet-selector').value;
+    const currentBalance = parseFloat(document.getElementById("balance-val").innerText);
+
+    if (name != "" && value != "") {
+        if(value <= currentBalance){
+            fetch("/pay", {
                 method: 'POST',
-                headers: {'Content-Type': 'application/json'},
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken' : token
+                },
                 body: JSON.stringify([name,wallet,value])
             })
-            .then(function(response) {
-                if (!response.ok) {
-                    return response.text();
-                }
-                else{
-                    updateBalance();
-                    name = "";
-                    value = 0;
-                }
-            })//fix unfocusable form control
-            .then((data) => {
-                if(data){
-                    alert(data);
-                }
-            })
-        } else {
-            alert(translation["empty_fields"]);
+            .then((response) => {
+                if(response.ok)
+                updateBalance();
+                else
+                response.text().then(alert(translation["transaction_err"]));
+            });
+        } else{
+            alert(translation["no_balance"]);
         }
-        document.getElementById("add-transaction-name").value = "";
-        document.getElementById("add-transaction-value").value = 0;
-    });
+    } else{
+        alert(translation["empty_fields"]);
+    }
+
+    nameDiv.value = "";
+    valueDiv.value = 0;
 }
 
-function pay() {
-    const payForm = document.getElementById('pay-form');
-    payForm.addEventListener("submit", (e) => {
-        e.preventDefault();
-
-        const name = document.getElementById("pay-transaction-name").value
-        const wallet = document.getElementById('wallet-selector').value;
-        const value = document.getElementById("pay-transaction-value").value;
-
-        if (name != "" && value != "") {
-            fetch(`/balance?wallet=${wallet}`)
-            .then((response) => response.json())
-            .then((data) => {
-                if(value > data[0]/100){
-                    alert(translation["no_balance"]);
-                }
-                else{
-                    fetch("/pay", {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify([name,wallet,value])
-                    })
-                    .then(function(response) {
-                        if (!response.ok) {
-                            return response.text();
-                        }
-                        else{
-                            updateBalance();
-                        }
-                    })
-                    .then((data) => {
-                        if(data){
-                            alert(data);
-                        }
-                    })
-                }
-                document.getElementById("pay-transaction-name").value = "";
-                document.getElementById("pay-transaction-value").value = 0;
+    function deleteTransaction(wallet, id){
+        if(confirm(translation["del_transaction_confirm"])){
+            fetch("/delete_transaction", {
+                method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken' : token
+                    },
+                    body: JSON.stringify([wallet,id])
             })
-        }
-        else {
-            alert(translation["empty_fields"]);
-        }
-    });
-}
-
-function deleteTransaction(wallet, id){
-    if(confirm(translation["del_transaction_confirm"])){
-        fetch("/delete_transaction", {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify([wallet,id])
-        })
-        .then(function(){
-            updateBalance();
-        })
+            .then(updateBalance);
     }
 }
 
@@ -159,7 +143,6 @@ function checkScrollPosition(){
     const wrapper = document.getElementById("page-btn-wrapper");
     const prevBtn = document.getElementsByClassName("prev-btn")[0];
     const nextBtn = document.getElementsByClassName("next-btn")[0];
-
 
     if(wrapper.scrollLeft <= 0){
         prevBtn.style.color="grey";
@@ -227,7 +210,7 @@ let nameSortCounter = walletSortCounter = valueSortCounter = dateSortCounter = 0
 function updateTransactionTable(sortMode, page, currency) {
     const wallet = document.getElementById('wallet-selector').value;
     const rowsPerPageSelector = document.getElementById('items-page');
-    rowsPerPageSelector.setAttribute("onchange", `updateTransactionTable("date", 1)`);
+    rowsPerPageSelector.setAttribute("onchange", `updateTransactionTable("date", 1, "${currency}")`);
     const offset = Number(rowsPerPageSelector.value) * (Number(page) - 1);
 
     if(wallet == "Totalbalance"){
@@ -554,12 +537,11 @@ window.onload = function() {
         fetch(`/translations?lang=${data}`).then((response) => response.json())
         .then((data) => {
             translation = data;
+            token = document.getElementById('csrf-token').value;
 
             updateWalletSelector();
             document.getElementById('wallet-selector').addEventListener('change', updateBalance);
-            addMoney();
-            pay();
         })
     })
 }
-//Riccardo Luongo, 15/05/2025
+//Riccardo Luongo, 20/05/2025

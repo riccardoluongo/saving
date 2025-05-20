@@ -8,6 +8,10 @@ from logging.handlers import RotatingFileHandler
 from dotenv import load_dotenv
 from passlib.hash import pbkdf2_sha512
 from currency_converter import CurrencyConverter, SINGLE_DAY_ECB_URL
+from flask_wtf import FlaskForm
+from wtforms import StringField
+from wtforms.validators import DataRequired
+from flask_wtf.csrf import CSRFProtect
 import json
 import sys
 import logging
@@ -18,6 +22,7 @@ os.system("./logrotate.sh")
 load_dotenv()
 
 app = Flask(__name__)
+csrf = CSRFProtect(app)
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///db.sqlite"
 app.config["SECRET_KEY"] = os.getenv('SECRET_KEY')
 app.config["SESSION_COOKIE_SAMESITE"] = "Strict"
@@ -80,7 +85,7 @@ def register():
 
         client_ip = request.headers.get('X-Real-IP')
 
-        if not client_ip:
+        if not client_ip: #TODO turn this into a function available for all views that use it
             client_ip = request.headers.get('X-Forwarded-For')
             if client_ip:
                 client_ip = client_ip.split(',')[0]
@@ -217,7 +222,7 @@ def change_psw():
 @app.route("/logout")
 @login_required
 def logout():
-    app.logger.info(f"Logged out user '{current_user.username}'")
+    app.logger.info(f"Logging out user '{current_user.username}'...")
     logout_user()
     return redirect(url_for("index"))
 
@@ -251,35 +256,32 @@ def new_wallet():
     initial_value = request.get_json()[1]
     currency = request.get_json()[2]
 
-    if name.lower() in [wallet.lower() for wallet in get_wallets(current_user.username)]:
-        app.logger.warning(f"Cannot create wallet '{name}' for user '{current_user.username}': wallet already exists")
-        return Response(
-            f"Error: wallet '{name}' already exists",
-            status = 500
-        )
+    if name.lower() not in [wallet.lower() for wallet in get_wallets(current_user.username)]:
+        if code := create_wallet(name, initial_value, currency, current_user.username) == 0:
+            return Response(status = 200)
+        else:
+            return Response(status=500)
     else:
-        create_wallet(name, initial_value, currency, current_user.username)
-        app.logger.info(f"Created wallet '{name}' for user '{current_user.username}' with starting balance: {initial_value/100} {currency}")
-        return Response(
-            f"Success! Created wallet '{name}' for user '{current_user.username}'",
-            status = 200
-        )
+        app.logger.warning(f"Cannot create wallet '{name}' for user '{current_user.username}': wallet already exists")
+        return Response(status = 400)
 
-@app.route('/delete_all_wallets')
+@app.route('/delete_all_wallets', methods=["POST"])
 @login_required
 def del_all():
-    delete_all(current_user.username)
-    app.logger.info(f"Deleted all wallets for user '{current_user.username}'")
-    return redirect("/")
+    if code:= delete_all(current_user.username) == 0:
+        return Response(status=200)
+    else:
+        return Response(status=500)
 
-@app.route('/delete_wallet')
+@app.route('/delete_wallet', methods=["POST"])
 @login_required
 def del_wallet():
-    wallet = request.args['wallet']
+    wallet = request.get_json()
 
-    delete_wallet(wallet, current_user.username)
-    app.logger.info(f"Deleted wallet '{wallet}' for user '{current_user.username}'")
-    return redirect('/edit_wallets')
+    if code := delete_wallet(wallet, current_user.username) == 0:
+        return Response(status=200)
+    else:
+        return Response(status=500)
 
 @app.route('/add', methods = ["POST"])
 @login_required
@@ -291,16 +293,9 @@ def add_money():
 
     code = add_transaction(name, wallet, value, username)
     if code == 0:
-        app.logger.info(f"User '{username}' added {value/100}$ to wallet '{wallet}'")
-        return Response(
-            f"Success! Processed '{name}' transaction.",
-            status=200
-        )
+        return Response(status=200)
     else:
-        return Response(
-            f"Error! Couldn't process '{name}' transaction.",
-            status=500
-        )
+        return Response(status=500)
 
 @app.route('/pay', methods = ["POST"])
 @login_required
@@ -312,16 +307,9 @@ def pay():
 
     code = pay_transaction(name, wallet, value, username)
     if code == 0:
-        app.logger.info(f"User '{username}' took {value/100}$ off wallet '{wallet}'")
-        return Response(
-            f"Success! Processed '{name}' transaction.",
-            status=200
-        )
+        return Response(status=200)
     else:
-        return Response(
-            f"Error! Couldn't process '{name}' transaction.",
-            status=500
-        )
+        return Response(status=500)
 
 @app.route('/get_transactions')
 @login_required
@@ -410,4 +398,4 @@ def convert():
     to_c = request.args['to'].upper()
 
     return(jsonify(converter.convert(value, from_c, to_c)))
-#Riccardo Luongo, 15/05/2025
+#Riccardo Luongo, 20/05/2025

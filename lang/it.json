@@ -72,7 +72,12 @@
     "bal_header" : "Saldo",
     "currency" : "Valuta",
     "no_api" : "API di conversione valuta non disponibile",
-    "no_api_connection" : "Impossibile connettersi alla API di conversione valuta,\nassicurati di essere connesso a internet",
-    "all_transactions_err" : "Transazioni non disponibili.\nControlla le log per ulteriori informazioni",
-    "total_balance_err" : "Saldo totale non disponibile.\nControlla le log per ulteriori informazioni."
+    "no_api_connection" : "Impossibile connettersi alla API di conversione valuta, assicurati di essere connesso a internet",
+    "all_transactions_err" : "Transazioni non disponibili, controlla le log per ulteriori informazioni",
+    "total_balance_err" : "Saldo totale non disponibile, controlla le log per ulteriori informazioni.",
+    "transaction_err" : "Impossibile elaborare la transazione, controlla le log per ulteriori informazioni.",
+    "del_all_wallets_err" : "Impossibile eliminare tutti i portafogli, controlla le log per ulteriori informazioni.",
+    "del_wallet_err" : "Impossibile eliminare il portafoglio, controlla le log per ulteriori informazioni.",
+    "create_wallet_err" : "Impossibile creare il portafoglio, controlla le log per ulteriori informazioni.",
+    "balance_err" : "Saldo non disponibile, controlla le log per ulteriori informazioni."
 }

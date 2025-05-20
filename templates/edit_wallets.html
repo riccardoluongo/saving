@@ -12,6 +12,7 @@
 </head>
 
 <body>
+    <input type="hidden" id="csrf-token" value="{{ csrf_token() }}"/>
     <a class="home-link" href="/"><i class="fa fa-home fa-3x home" aria-hidden="true"></i></a>
     <span class="title">{{ translation['my_wallets'] }}</span>
     <i class="fa fa-user menu-btn2 fa-2x" aria-hidden="true" onclick="openNav2()"></i>
@@ -21,9 +22,7 @@
           <button class="btn btn-primary btn-lg wallet-btn" onclick="delAll();"><i class="fa fa-trash" aria-hidden="true"></i>{{ translation['del_all_walls'] }}</button>
         </div>
         <div class="table-wrapper">
-          <table class="wallet-table" id="wallet-table" border="1">
-            
-          </table>
+          <table class="wallet-table" id="wallet-table" border="1"></table>
         </div>
     </div>
     <div class="modal" id="walletModal" tabindex="-1" role="dialog" aria-labelledby="walletModalTitle" aria-hidden="true">

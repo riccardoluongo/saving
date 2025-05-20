@@ -21,16 +21,19 @@ function new_wallet() {
                 if(regex.test(name.value)){
                     fetch(`/new_wallet`, {
                         method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify([name.value,startBalance.value * 100,currency.value])
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken' : token
+                    },
+                    body: JSON.stringify([name.value,startBalance.value * 100,currency.value])
                     })
                     .then(function(response) {
-                        if (!response.ok) {
-                            alert(translation["wallet_exists"]);
-                        }
-                        else{
+                        if (response.ok)
                             updateWalletTable();
-                        }
+                        else if(response.status == 400)
+                            alert(translation["wallet_exists"]);
+                        else
+                            alert(translation["create_wallet_err"]);
                     })
                 }
                 else{
@@ -53,10 +56,20 @@ function setAttributes(el, attrs) {
 
 function deleteWallet(wallet){
     if(confirm(translation["wallet_delete_confirm"])){
-        fetch(`/delete_wallet?wallet=${wallet}`)
-        .then(function(){
-            updateWalletTable();
+        fetch(`/delete_wallet`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken' : token
+            },
+            body: JSON.stringify(wallet)
         })
+        .then((response) => {
+            if(response.ok)
+                updateWalletTable();
+            else
+                alert(translation['del_wallet_err']);
+        });
     }
 }
 
@@ -87,26 +100,34 @@ function updateWalletTable() {
                 const nameColumn = row.appendChild(document.createElement('td'));
                 const balanceColumn = row.appendChild(document.createElement('td'));
                 const actionsColumn = row.appendChild(document.createElement('td'));
+                const deleteLink = actionsColumn.appendChild(document.createElement('a'));
+                const deleteButton = deleteLink.appendChild(document.createElement('button'));
+                const deleteButtonIcon = deleteButton.appendChild(document.createElement('i'));
 
                 nameColumn.setAttribute('class','name-td');
                 nameColumn.innerText = data[wallet];
-
+                actionsColumn.setAttribute('class', 'actions-td');
                 balanceColumn.setAttribute('class', 'balance-td');
+
                 fetch(`/balance?wallet=${data[wallet]}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        if(data[1] == "EUR")
-                            currency = "€";
-                        balanceColumn.innerText = data[0]/100 + currency;
+                    .then(response => {
+                        if(response.ok)
+                            return response.json();
+                        else
+                            alert(translation["balance_err"]);
+                    })
+                    .then((data) => {
+                        if(data != null){
+                            if(data[1] == "EUR")
+                                currency = "€";
+                            balanceColumn.innerText = data[0]/100 + currency;
+                        } else{
+                            alert(translation["balance_err"]);
+                        }
                     })
 
-                actionsColumn.setAttribute('class', 'actions-td');
-
-                const deleteLink = actionsColumn.appendChild(document.createElement('a'));
                 deleteLink.setAttribute('onclick', `deleteWallet('${data[wallet]}')`);
-                const deleteButton = deleteLink.appendChild(document.createElement('button'));
                 setAttributes(deleteButton, {'class' : 'del-btn', 'title' : 'Delete'});
-                const deleteButtonIcon = deleteButton.appendChild(document.createElement('i'));
                 deleteButtonIcon.setAttribute('class', 'fa fa-trash del-btn-icon');
             }
         })
@@ -114,10 +135,18 @@ function updateWalletTable() {
 
 function delAll() {
     if(confirm(translation["delete_all_wallets"])){
-        fetch('/delete_all_wallets')
-            .then(function() {
+        fetch(`/delete_all_wallets`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken' : token
+            },
+        })
+        .then((response) => {
+            if(response.ok)
                 updateWalletTable();
-            })
+            else
+                alert(translation['del_all_wallets_err']);
+        });
     }
 }
 
@@ -133,14 +162,14 @@ window.onload = function() {
     fetch("/current_lang")
     .then((response) => response.json())
     .then((data) => {
-        currency = data == "ita" ? "€" : "$";
         fetch(`/translations?lang=${data}`).then((response) => response.json())
         .then((data) => {
             translation = data;
+            token = document.getElementById('csrf-token').value;
 
             new_wallet();
             updateWalletTable();
         })
     })
 }
-//Riccardo Luongo, 16/05/2025
+//Riccardo Luongo, 20/05/2025

@@ -140,10 +140,7 @@ def update_balance(wallet, value, user):
 
     if is_table_name_valid(wallet):
         id = 1
-        sql = f''' UPDATE [{wallet}_balance]
-                SET value = ?
-                WHERE id = ?'''
-        cur.execute(sql, (value, id),)
+        cur.execute(f"UPDATE [{wallet}_balance] SET value = ? WHERE id = ?", (value, id),)
         conn.commit()
     else:
         main.app.logger.error(f"Error while updating the balance for wallet '{wallet}' of user '{user}': invalid table name")
@@ -196,11 +193,15 @@ def create_wallet(name, start_balance, currency, user):
             );
             """)
             cur.execute(f"INSERT INTO [{name}_balance](value, currency) VALUES(?, ?)", (start_balance, currency))
+
             conn.commit()
+            main.app.logger.info(f"Created wallet '{name}' for user '{user}' with starting balance: {start_balance/100} {currency}")
+            return 0
         else:
             raise Error("invalid table name")
     except Error as e:
         main.app.logger.error(f"Error while creating wallet '{name}' for user '{user}': {e}")
+        return 1
     finally:
         conn.close()
 
@@ -243,11 +244,15 @@ def delete_wallet(name, user):
             cur.execute(f"DROP TABLE IF EXISTS [{name}_transactions]")
             if name == 'main':
                 cur.execute("UPDATE deleted_tables_check SET value = 1 WHERE ID = 1")
+
             conn.commit()
+            main.app.logger.info(f"Deleted wallet '{name}' for user '{user}'")
+            return 0
         else:
             raise Error("invalid table name")
     except Error as e:
         main.app.logger.error(f"Error while deleting wallet '{name}' for user '{user}': {e}")
+        return 1
     finally:
         conn.close()
 
@@ -266,8 +271,11 @@ def delete_all(user):
 
         cur.executescript(CREATE_MAIN_TABLES_COMMAND)
         create_initial_rows(user)
+        main.app.logger.info(f"Deleted all wallets for user '{user}'")
+        return 0
     except Error as e:
         main.app.logger.error(f"Error while deleting all wallets for user '{user}': {e}")
+        return 1
     finally:
         conn.close()
 
@@ -290,6 +298,7 @@ def add_transaction(name, wallet, value, user):
 
             cur.execute(sql, (name, wallet, value, dumps(get_wallet_balance_list(user)), old_balance[1]))
             conn.commit()
+            main.app.logger.info(f"User '{user}' added {value/100}$ to wallet '{wallet}'")
             return 0
         else:
             raise Error("invalid table name")
@@ -318,6 +327,7 @@ def pay_transaction(name, wallet, value, user):
 
             cur.execute(sql, (name, wallet, -value, dumps(get_wallet_balance_list(user)), old_balance[1]))
             conn.commit()
+            main.app.logger.info(f"User '{user}' took {value/100}$ off wallet '{wallet}'")
             return 0
         else:
             raise Error("invalid table name")
@@ -329,7 +339,6 @@ def pay_transaction(name, wallet, value, user):
 
 def get_transactions(wallet, user, offset, limit):
     database_file = r"./database/"+user+".db"
-    paginated_transactions = []
     offset = int(offset)
     limit = int(limit)
 
@@ -343,11 +352,11 @@ def get_transactions(wallet, user, offset, limit):
         if is_table_name_valid(wallet):
             cur.execute(f"SELECT name,DATE(date),price,wallet,id,currency FROM [{wallet}_transactions]")
             transactions = cur.fetchall()
-            transactions.reverse()
 
             if limit == 0:
                 return transactions
             else:
+                paginated_transactions = []
                 for i in range(offset, min(offset+limit, len(transactions))):
                     paginated_transactions.append(transactions[i])
 
@@ -529,4 +538,4 @@ def get_total_balance(user, currency):
         main.app.logger.error(f"Error while retrieving total balance for user '{user}': {e}")
     finally:
         conn.close()
-#Riccardo Luongo, 16/05/2025
+#Riccardo Luongo, 20/05/2025
