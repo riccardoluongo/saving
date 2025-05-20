@@ -290,7 +290,7 @@ def del_wallet():
 def add_money():
     name = request.get_json()[0]
     wallet = request.get_json()[1]
-    value = int(float(request.get_json()[2]) * 100)
+    value = int(request.get_json()[2].replace('.', ''))
     username = current_user.username
 
     code = add_transaction(name, wallet, value, username)
@@ -304,7 +304,7 @@ def add_money():
 def pay():
     name = request.get_json()[0]
     wallet = request.get_json()[1]
-    value = int(float(request.get_json()[2]) * 100)
+    value = int(request.get_json()[2].replace('.', ''))
     username = current_user.username
 
     code = pay_transaction(name, wallet, value, username)

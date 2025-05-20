@@ -61,9 +61,11 @@ function updateWalletSelector() {
 function addMoney(event) {
     event.preventDefault();
 
-    const name = document.getElementById("add-transaction-name").value;
+    const nameDiv = document.getElementById("add-transaction-name");
+    const name = nameDiv.value;
     const wallet = document.getElementById('wallet-selector').value;
-    const value = document.getElementById("add-transaction-value").value;
+    const valueDiv = document.getElementById("add-transaction-value");
+    const value = valueDiv.value;
 
     if (name != "" && value != "") {
         fetch("/add", {
@@ -84,8 +86,8 @@ function addMoney(event) {
         alert(translation["empty_fields"]);
     }
 
-    name = "";
-    value = 0;
+    nameDiv.value = "";
+    valueDiv.value = 0;
 }
 
 function pay(event) {
