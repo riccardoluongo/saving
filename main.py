@@ -18,7 +18,6 @@ import logging
 import os
 import atexit
 
-os.system("./logrotate.sh")
 load_dotenv()
 
 app = Flask(__name__)
@@ -32,7 +31,7 @@ app.config['DEBUG'] = False
 app.json.sort_keys = False
 db = SQLAlchemy()
 
-handler = RotatingFileHandler('log/main/main.log', maxBytes=1000000, backupCount=10)
+handler = RotatingFileHandler('logs/main.log', maxBytes=1000000, backupCount=10)
 handler.setLevel(logging.INFO)
 formatter = logging.Formatter('[%(levelname)s] [%(asctime)s] - %(message)s')
 handler.setFormatter(formatter)

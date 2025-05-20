@@ -10,8 +10,7 @@ cd saving
 
 Create the directories for logs and the database:
 ```
-mkdir -p log/main
-mkdir -p log/access
+mkdir logs
 mkdir database
 ```
 
