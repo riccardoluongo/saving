@@ -225,9 +225,10 @@ function updateTransactionTable(sortMode, page, currency) {
         .then(response => response.json())
         .then(data => {
             const buttons = document.getElementById("buttons");
-            if(buttons){
-                buttons.remove();
-            }
+            const piggyWrapper = document.getElementById("piggy-wrapper");
+
+            piggyWrapper.style.bottom = "135%";
+            if(buttons){buttons.remove();}
 
             const balanceContainer = document.getElementById("main-square");
             balanceContainer.style.height = "7rem";
@@ -362,12 +363,13 @@ function updateTransactionTable(sortMode, page, currency) {
         .then(response => response.json())
         .then(data => {
             const mainSquare = document.getElementById("main-square");
-            mainSquare.style.height = "10.5rem";
-
             const buttonsDiv = document.getElementById("buttons");
-            if(buttonsDiv){
-                buttonsDiv.remove();
-            }
+            const piggyWrapper = document.getElementById("piggy-wrapper");
+
+            piggyWrapper.style.bottom = "102%";
+            mainSquare.style.height = "10.5rem";
+            if(buttonsDiv){buttonsDiv.remove();};
+
 
             const buttons = mainSquare.appendChild(document.createElement("div"));
             setAttributes(buttons, {'id':'buttons', 'class':'buttons'});
