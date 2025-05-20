@@ -24,6 +24,12 @@ Edit the file and add this line with your key at the end:
 SECRET_KEY= #your key here
 ```
 
+And add a line to specify the maximum size of the log file (in bytes) before a new one is used, and how many old files should be kept:
+```
+MAX_LOGSIZE=100000
+LOG_BACKUP_COUNT=10
+```
+
 Create and activate a python virtual environment:
 ```
 python3 -m venv venv

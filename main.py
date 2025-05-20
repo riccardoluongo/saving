@@ -19,11 +19,14 @@ import os
 import atexit
 
 load_dotenv()
+SECRET_KEY = os.getenv('SECRET_KEY')
+MAX_LOGSIZE = int(os.getenv('MAX_LOGSIZE'))
+LOG_BACKUP_COUNT = int(os.getenv('LOG_BACKUP_COUNT'))
 
 app = Flask(__name__)
 csrf = CSRFProtect(app)
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///db.sqlite"
-app.config["SECRET_KEY"] = os.getenv('SECRET_KEY')
+app.config["SECRET_KEY"] = SECRET_KEY
 app.config["SESSION_COOKIE_SAMESITE"] = "Strict"
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=24)
@@ -31,7 +34,7 @@ app.config['DEBUG'] = False
 app.json.sort_keys = False
 db = SQLAlchemy()
 
-handler = RotatingFileHandler('logs/main.log', maxBytes=1000000, backupCount=10)
+handler = RotatingFileHandler('logs/main.log', maxBytes=MAX_LOGSIZE, backupCount=LOG_BACKUP_COUNT)
 handler.setLevel(logging.INFO)
 formatter = logging.Formatter('[%(levelname)s] [%(asctime)s] - %(message)s')
 handler.setFormatter(formatter)
