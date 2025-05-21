@@ -87,7 +87,7 @@ def register():
 
         client_ip = request.headers.get('X-Real-IP')
 
-        if not client_ip: #TODO turn this into a function available for all views that use it
+        if not client_ip:
             client_ip = request.headers.get('X-Forwarded-For')
             if client_ip:
                 client_ip = client_ip.split(',')[0]
