@@ -356,11 +356,12 @@ def get_transactions(wallet, user, offset, limit):
             if limit == 0:
                 return transactions
             else:
+                transactions.reverse()
                 paginated_transactions = []
                 for i in range(offset, min(offset+limit, len(transactions))):
                     paginated_transactions.append(transactions[i])
 
-            return paginated_transactions
+                return paginated_transactions
         else:
             raise Error("invalid table name")
     except Error as e:
@@ -453,9 +454,9 @@ def get_all_transactions(user):
                     if datetime(year_key, month_num, day).date() > today:
                         break
                     if day in monthly_data[year_key][month_key]:
-                        last_updated_day_data = monthly_data[year_key][month_key][day][-1][2]
+                        last_updated_day_data = (monthly_data[year_key][month_key][day][-1][2], monthly_data[year_key][month_key][day][-1][6])
                     elif last_updated_day_data:
-                        monthly_data[year_key][month_key][day] = [[0,0,last_updated_day_data]]
+                        monthly_data[year_key][month_key][day] = [[0,0,last_updated_day_data[0],0,0,0,last_updated_day_data[1]]]
         return monthly_data
     except Error as e:
         main.app.logger.error(f"Error while retrieving all transactions for user '{user}': {e}")
@@ -538,4 +539,4 @@ def get_total_balance(user, currency):
         main.app.logger.error(f"Error while retrieving total balance for user '{user}': {e}")
     finally:
         conn.close()
-#Riccardo Luongo, 20/05/2025
+#Riccardo Luongo, 30/05/2025
