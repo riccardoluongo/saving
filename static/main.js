@@ -62,10 +62,10 @@ function addMoney(event) {
     event.preventDefault();
 
     const nameDiv = document.getElementById("add-transaction-name");
-    const name = nameDiv.value;
+    const name = nameDiv.value
     const wallet = document.getElementById('wallet-selector').value;
     const valueDiv = document.getElementById("add-transaction-value");
-    const value = valueDiv.value;
+    const value = parseFloat(valueDiv.value).toFixed(2);
 
     if (name != "" && value != "") {
         fetch("/add", {
@@ -96,7 +96,7 @@ function pay(event) {
     const nameDiv = document.getElementById("pay-transaction-name");
     const name = nameDiv.value;
     const valueDiv = document.getElementById("pay-transaction-value");
-    const value = valueDiv.value;
+    const value = parseFloat(valueDiv.value).toFixed(2);
     const wallet = document.getElementById('wallet-selector').value;
     const currentBalance = parseFloat(document.getElementById("balance-val").innerText);
 
@@ -548,4 +548,4 @@ window.onload = function() {
         })
     })
 }
-//Riccardo Luongo, 20/05/2025
+//Riccardo Luongo, 29/05/2025
