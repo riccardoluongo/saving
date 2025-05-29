@@ -8,9 +8,10 @@ git clone https://github.com/riccardoluongo/saving/
 cd saving
 ```
 
-Create the logs directory:
+Create the directories for logs and the database:
 ```
-mkdir log
+mkdir logs
+mkdir database
 ```
 
 Generate a secure secret key for Flask and add it to the .env file (you will need to create it):
@@ -21,6 +22,12 @@ openssl rand -base64 32
 Edit the file and add this line with your key at the end:
 ```
 SECRET_KEY= #your key here
+```
+
+And add a line to specify the maximum size of the log file (in bytes) before a new one is used, and how many old files should be kept:
+```
+MAX_LOGSIZE=100000
+LOG_BACKUP_COUNT=10
 ```
 
 Create and activate a python virtual environment:

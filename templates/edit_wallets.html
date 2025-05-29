@@ -12,6 +12,7 @@
 </head>
 
 <body>
+    <input type="hidden" id="csrf-token" value="{{ csrf_token() }}"/>
     <a class="home-link" href="/"><i class="fa fa-home fa-3x home" aria-hidden="true"></i></a>
     <span class="title">{{ translation['my_wallets'] }}</span>
     <i class="fa fa-user menu-btn2 fa-2x" aria-hidden="true" onclick="openNav2()"></i>
@@ -21,9 +22,7 @@
           <button class="btn btn-primary btn-lg wallet-btn" onclick="delAll();"><i class="fa fa-trash" aria-hidden="true"></i>{{ translation['del_all_walls'] }}</button>
         </div>
         <div class="table-wrapper">
-          <table class="wallet-table" id="wallet-table" border="1">
-            
-          </table>
+          <table class="wallet-table" id="wallet-table" border="1"></table>
         </div>
     </div>
     <div class="modal" id="walletModal" tabindex="-1" role="dialog" aria-labelledby="walletModalTitle" aria-hidden="true">
@@ -42,6 +41,10 @@
                     <input type="text" id="wallet-name" autocomplete="off" autofocus minlength="1"><br>
                     <label for="wallet-start-balance">{{ translation['start_val'] }}</label><br>
                     <input type="number" id="wallet-start-balance" value="0" autocomplete="off" min="0" step="0.01">
+                    <select id="currency">
+                      <option value="USD">USD</option>
+                      <option value="EUR">EUR</option>
+                    </select>
                   </div>
                     <div class="modal-footer" style="margin-top: 10px;">
                         <button type="submit" class="btn btn-primary" data-bs-dismiss="modal">{{ translation['save'] }}</button>

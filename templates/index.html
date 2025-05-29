@@ -12,6 +12,7 @@
 </head>
 
 <body>
+  <input type="hidden" id="csrf-token" value="{{ csrf_token() }}"/>
   <i class="fa fa-bars menu-btn fa-2x" aria-hidden="true" onclick="openNav()"></i>
   <select class="choose-wallet" id="wallet-selector">
     <option value="Totalbalance">{{ translation['total'] }}</option>
@@ -21,7 +22,11 @@
       <div class="balance">
           <div class="balance-title">{{ translation['current'] }}</div>
           <div class="balance-value" id="balance-val"></div>
-          <div class="piggy-wrapper"><img src="/static/piggy.png" class="piggy"></img></div>
+          <select class="currency-select" id="currency">
+            <option value="USD">USD</option>
+            <option value="EUR">EUR</option>
+          </select>
+          <span class="piggy-wrapper" id="piggy-wrapper"><img src="/static/piggy.png" class="piggy"></img></span>
       </div>
   </div>
   <div class="transactions-square" id="transaction-square">
@@ -49,7 +54,7 @@
             </button>
           </div>
           <div class="modal-body">
-            <form id="add-form">
+            <form id="add-form" onsubmit="addMoney(event)">
               <div class="modal-input">
                 <label for="add-transaction-name">{{ translation['name_sorter'] }}</label><br>
                 <input type="text" id="add-transaction-name" autocomplete="off" autofocus minlength="1"><br>
@@ -76,7 +81,7 @@
           </button>
         </div>
         <div class="modal-body">
-            <form id="pay-form">
+            <form id="pay-form" onsubmit="pay(event)">
               <div class="modal-input">
                 <label for="pay-transaction-name">{{ translation['name_sorter'] }}</label><br>
                 <input type="text" id="pay-transaction-name" autocomplete="off" autofocus minlength="1"><br>

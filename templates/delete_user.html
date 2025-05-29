@@ -33,6 +33,7 @@
                 {% endif %}
             {% endwith %}
             <form action="#" method="post" class="reg-form-container" onsubmit="confirmDel(event);">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                 <label for="del-password" style="color: red;" id="del-acc-label">{{ translation['del_usr_psw'] }}</label>
                 <input type="password" name="del-password" class="input is-large" placeholder="Password" style="height: 40px; margin-top: 5px;" required/>
                 <div class="remember-wrapper">

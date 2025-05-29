@@ -33,6 +33,7 @@
                 {% endif %}
             {% endwith %}
             <form action="#" method="post" class="reg-form-container" onsubmit="validateForm(event);">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                 <input type="password" name="current-password" class="input is-large" placeholder="{{ translation['current_psw'] }}" style="height: 40px; margin-top: 5px;" required/>
                 <input type="password" name="new-password" class="input is-large" placeholder="{{ translation['new_psw'] }}" style="height: 40px; margin-top: 5px;" required/>
                 <input type="password" name="confirm-new-password" class="input is-large" placeholder="{{ translation['conf_psw'] }}" style="height: 40px; margin-top: 5px;" required/>

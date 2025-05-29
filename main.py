@@ -7,18 +7,26 @@ from datetime import timedelta
 from logging.handlers import RotatingFileHandler
 from dotenv import load_dotenv
 from passlib.hash import pbkdf2_sha512
+from currency_converter import CurrencyConverter, SINGLE_DAY_ECB_URL
+from flask_wtf import FlaskForm
+from wtforms import StringField
+from wtforms.validators import DataRequired
+from flask_wtf.csrf import CSRFProtect
 import json
 import sys
 import logging
 import os
 import atexit
 
-os.system("./logrotate.sh")
 load_dotenv()
+SECRET_KEY = os.getenv('SECRET_KEY')
+MAX_LOGSIZE = int(os.getenv('MAX_LOGSIZE'))
+LOG_BACKUP_COUNT = int(os.getenv('LOG_BACKUP_COUNT'))
 
 app = Flask(__name__)
+csrf = CSRFProtect(app)
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///db.sqlite"
-app.config["SECRET_KEY"] = os.getenv('SECRET_KEY')
+app.config["SECRET_KEY"] = SECRET_KEY
 app.config["SESSION_COOKIE_SAMESITE"] = "Strict"
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=24)
@@ -26,7 +34,7 @@ app.config['DEBUG'] = False
 app.json.sort_keys = False
 db = SQLAlchemy()
 
-handler = RotatingFileHandler('log/main/main.log', maxBytes=1000000, backupCount=10)
+handler = RotatingFileHandler('logs/main.log', maxBytes=MAX_LOGSIZE, backupCount=LOG_BACKUP_COUNT)
 handler.setLevel(logging.INFO)
 formatter = logging.Formatter('[%(levelname)s] [%(asctime)s] - %(message)s')
 handler.setFormatter(formatter)
@@ -43,6 +51,8 @@ eng = json.load(open("lang/en.json"))
 ita = json.load(open("lang/it.json"))
 eng_login = json.load(open("lang/login_eng.json"))
 ita_login = json.load(open("lang/login_ita.json"))
+
+converter = CurrencyConverter(SINGLE_DAY_ECB_URL)
 
 app.logger.info("App started")
 
@@ -76,7 +86,7 @@ def register():
         password_confirm = request.form.get("password-confirm")
 
         client_ip = request.headers.get('X-Real-IP')
-    
+
         if not client_ip:
             client_ip = request.headers.get('X-Forwarded-For')
             if client_ip:
@@ -103,7 +113,7 @@ def register():
         initialize_db(user.username)
         app.logger.info(f"Registered user '{username}', request from {client_ip}")
         return redirect(f"/login?lang={lang}")
-        
+
     return render_template("register.html", lang = lang, translation = (ita_login if lang == "ita" else eng_login))
 
 @app.route("/login", methods=["GET", "POST"])
@@ -115,7 +125,7 @@ def login():
         user = Users.query.filter_by(username=username).first()
 
         client_ip = request.headers.get('X-Real-IP')
-    
+
         if not client_ip:
             client_ip = request.headers.get('X-Forwarded-For')
             if client_ip:
@@ -152,9 +162,9 @@ def del_user():
         username = current_user.username
         password = request.form.get("del-password")
         confirm = True if request.form.get('confirm-del-checkbox') else False
-        
+
         client_ip = request.headers.get('X-Real-IP')
-    
+
         if not client_ip:
             client_ip = request.headers.get('X-Forwarded-For')
             if client_ip:
@@ -187,7 +197,7 @@ def change_psw():
         confirm_psw = request.form.get("confirm-new-password")
 
         client_ip = request.headers.get('X-Real-IP')
-    
+
         if not client_ip:
             client_ip = request.headers.get('X-Forwarded-For')
             if client_ip:
@@ -214,7 +224,7 @@ def change_psw():
 @app.route("/logout")
 @login_required
 def logout():
-    app.logger.info(f"Logged out user '{current_user.username}'")
+    app.logger.info(f"Logging out user '{current_user.username}'...")
     logout_user()
     return redirect(url_for("index"))
 
@@ -223,7 +233,7 @@ def logout():
 def index():
     current_username = current_user.username
     return render_template("index.html", text = current_username, translation = (ita if current_user.lang == "ita" else eng))
-    
+
 @app.route('/balance')
 @login_required
 def balance():
@@ -241,83 +251,67 @@ def show_wallets():
 def wallets():
     return jsonify(get_wallets(current_user.username))
 
-@app.route('/new_wallet')
+@app.route('/new_wallet', methods = ["POST"])
 @login_required
 def new_wallet():
-    name = request.args['name']
-    initial_value = request.args['start_value']
+    name = request.get_json()[0]
+    initial_value = request.get_json()[1]
+    currency = request.get_json()[2]
 
-    if name in get_wallets(current_user.username):
-        app.logger.warning(f"Cannot create wallet '{name}' for user '{current_user.username}': wallet already exists")
-        return Response(
-            f"Error: wallet '{name}' already exists",
-            status = 500
-        )
+    if name.lower() not in [wallet.lower() for wallet in get_wallets(current_user.username)]:
+        if code := create_wallet(name, initial_value, currency, current_user.username) == 0:
+            return Response(status = 200)
+        else:
+            return Response(status=500)
     else:
-        create_wallet(name, initial_value, current_user.username)
-        app.logger.info(f"Created wallet '{name}' for user '{current_user.username}' with starting balance: {initial_value}")
-        return Response(
-            f"Success! Created wallet '{name}' for user '{current_user.username}'",
-            status = 200
-        )
+        app.logger.warning(f"Cannot create wallet '{name}' for user '{current_user.username}': wallet already exists")
+        return Response(status = 400)
 
-@app.route('/delete_all_wallets')
+@app.route('/delete_all_wallets', methods=["POST"])
 @login_required
 def del_all():
-    delete_all(current_user.username)
-    app.logger.info(f"Deleted all wallets for user '{current_user.username}'")
-    return redirect("/")
+    if code:= delete_all(current_user.username) == 0:
+        return Response(status=200)
+    else:
+        return Response(status=500)
 
-@app.route('/delete_wallet')
+@app.route('/delete_wallet', methods=["POST"])
 @login_required
 def del_wallet():
-    wallet = request.args['wallet']
-    
-    delete_wallet(wallet, current_user.username)
-    app.logger.info(f"Deleted wallet '{wallet}' for user '{current_user.username}'")
-    return redirect('/edit_wallets')
+    wallet = request.get_json()
 
-@app.route('/add')
+    if code := delete_wallet(wallet, current_user.username) == 0:
+        return Response(status=200)
+    else:
+        return Response(status=500)
+
+@app.route('/add', methods = ["POST"])
 @login_required
 def add_money():
-    name = request.args['name']
-    wallet = request.args['wallet']
-    value = request.args['value']
+    name = request.get_json()[0]
+    wallet = request.get_json()[1]
+    value = int(request.get_json()[2].replace('.', ''))
     username = current_user.username
 
     code = add_transaction(name, wallet, value, username)
     if code == 0:
-        app.logger.info(f"User '{username}' added {value}$ to wallet '{wallet}'")
-        return Response(
-            f"Success! Processed '{name}' transaction.",
-            status=200
-        )
+        return Response(status=200)
     else:
-        return Response(
-            f"Error! Couldn't process '{name}' transaction.",
-            status=500
-        )
+        return Response(status=500)
 
-@app.route('/pay')
+@app.route('/pay', methods = ["POST"])
 @login_required
 def pay():
-    name = request.args['name']
-    wallet = request.args['wallet']
-    value = request.args['value']
+    name = request.get_json()[0]
+    wallet = request.get_json()[1]
+    value = int(request.get_json()[2].replace('.', ''))
     username = current_user.username
 
     code = pay_transaction(name, wallet, value, username)
     if code == 0:
-        app.logger.info(f"User '{username}' took {value}$ off wallet '{wallet}'")
-        return Response(
-            f"Success! Processed '{name}' transaction.",
-            status=200
-        )
+        return Response(status=200)
     else:
-        return Response(
-            f"Error! Couldn't process '{name}' transaction.",
-            status=500
-        )
+        return Response(status=500)
 
 @app.route('/get_transactions')
 @login_required
@@ -348,13 +342,15 @@ def transactions_list():
 @app.route('/total_balance')
 @login_required
 def total_balance():
-    return jsonify(get_total_balance(current_user.username))
+    currency = request.args['currency']
 
-@app.route('/delete_transaction')
+    return jsonify(get_total_balance(current_user.username, currency))
+
+@app.route('/delete_transaction', methods = ["POST"])
 @login_required
 def del_trans():
-    wallet = request.args['wallet']
-    id = request.args['id']
+    wallet = request.get_json()[0]
+    id = request.get_json()[1]
     username = current_user.username
 
     delete_transaction(wallet, id, username)
@@ -388,10 +384,20 @@ def get_login_translations():
         return jsonify(eng_login)
 
 @app.route('/translations')
+@login_required
 def get_translations():
     lang = request.args['lang']
     if lang == "ita":
         return jsonify(ita)
     else:
         return jsonify(eng)
-#By Riccardo Luongo, 11/04/2025
+
+@app.route('/convert')
+@login_required
+def convert():
+    value = request.args['value']
+    from_c = request.args['from'].upper()
+    to_c = request.args['to'].upper()
+
+    return(jsonify(converter.convert(value, from_c, to_c)))
+#Riccardo Luongo, 20/05/2025

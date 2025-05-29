@@ -69,5 +69,15 @@
     "conf_psw" : "Conferma password",
     "no_balance" : "Saldo non disponibile!",
     "del_transaction_confirm" : "Eliminare la transazione?",
-    "bal_header" : "Balance"
+    "bal_header" : "Saldo",
+    "currency" : "Valuta",
+    "no_api" : "API di conversione valuta non disponibile",
+    "no_api_connection" : "Impossibile connettersi alla API di conversione valuta, assicurati di essere connesso a internet",
+    "all_transactions_err" : "Transazioni non disponibili, controlla le log per ulteriori informazioni",
+    "total_balance_err" : "Saldo totale non disponibile, controlla le log per ulteriori informazioni.",
+    "transaction_err" : "Impossibile elaborare la transazione, controlla le log per ulteriori informazioni.",
+    "del_all_wallets_err" : "Impossibile eliminare tutti i portafogli, controlla le log per ulteriori informazioni.",
+    "del_wallet_err" : "Impossibile eliminare il portafoglio, controlla le log per ulteriori informazioni.",
+    "create_wallet_err" : "Impossibile creare il portafoglio, controlla le log per ulteriori informazioni.",
+    "balance_err" : "Saldo non disponibile, controlla le log per ulteriori informazioni."
 }

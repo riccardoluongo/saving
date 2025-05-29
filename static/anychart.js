@@ -48154,43 +48154,68 @@
     $_._ = _;
 });
 
-function updateChart(){
+async function updateChart(){
+    let graphData = [];
     const year = document.getElementById('year-selector').value;
     const month = document.getElementById('month-selector').value;
-    const graph_container = document.getElementById('graph');
+    const graphContainer = document.getElementById('graph');
+    const currencySelector = document.getElementById('currency-selector');
+    const selectedCurrency = currencySelector.value;
+    currencySelector.setAttribute('onchange', 'updateChart();');
+    currencySelector.setAttribute('value', 'USD');
 
-    while(graph_container.firstChild) {
-        graph_container.removeChild(graph_container.firstChild);
+    while(graphContainer.firstChild) {
+        graphContainer.removeChild(graphContainer.firstChild);
     }
 
-    fetch(`/all_transactions`)
-    .then(response => response.json())
-    .then(data => {
-        var graph_data = [];
+    const transactionsPromise = await fetch(`/all_transactions`);
+    if(!transactionsPromise.ok){
+        alert(translation['all_transactions_err']);
+        return;
+    }
 
-        for(const day in data[year][month]){
-            const daily_snap = data[year][month][day].slice(-1)[0][2];
-            graph_data.push([day, daily_snap]);
+    const transactions = await transactionsPromise.json();
+    for(const day in transactions[year][month]){
+        const dailySnapshot = JSON.parse(transactions[year][month][day].slice(-1)[0][2]);
+
+        for(const wallet of dailySnapshot){
+            if(wallet[1] == selectedCurrency){
+                graphData.push([day, wallet[0]/100]);
+            }
+            else{
+                const convertPromise = await fetch(`/convert?value=${wallet[0]}&from=${wallet[1]}&to=${selectedCurrency}`)
+                if(!convertPromise.ok){
+                    alert(translation['no_api']);
+                    return;
+                }
+
+                const conversionData = await convertPromise.json();
+                const value = parseFloat(conversionData.toFixed(2));
+                graphData.push([day, value/100]);
+            }
         }
-        fetch('/total_balance')
-            .then(response => response.json())
-            .then(data => {
-                const last_date = graph_data.slice(-1)[0][0];
-                graph_data.splice(-1);
-                graph_data.push([last_date, data]);
-                var dataSet = anychart.data.set(graph_data);
-        
-                var firstSeriesData = dataSet.mapAs({x: 0, value: 1});
+    }
 
-                var chart = anychart.line();
-                var firstSeries = chart.line(firstSeriesData);
-                firstSeries.name("Balance");
-                
-                chart.container("graph");
-                chart.draw();
-                updateSummaryTable()
-            })
-    })
+    const totalBalancePromise = await fetch(`/total_balance?currency=${selectedCurrency}`);
+    if(!totalBalancePromise.ok){
+        alert(translation['total_balance_err']);
+        return;
+    }
+
+    const totalBalance = await totalBalancePromise.json();
+    const lastDate = graphData.slice(-1)[0][0];
+    graphData.splice(-1);
+    graphData.push([lastDate, totalBalance/100]);
+
+    let dataSet = anychart.data.set(graphData);
+    let firstSeriesData = dataSet.mapAs({x: 0, value: 1});
+    let chart = anychart.line();
+    let firstSeries = chart.line(firstSeriesData);
+    firstSeries.name("Balance");
+    chart.container("graph");
+
+    chart.draw();
+    updateSummaryTable(transactions, year, selectedCurrency);
 }
 
 function updateYearSelector() {
@@ -48227,102 +48252,86 @@ function updateMonthSelector() {
                 option.innerText = translation[month];
             }
 
-            let length = selector.options.length
+            let length = selector.options.length;
             selector.options[length-1].selected = true;
+
             updateChart();
         })
 }
 
-function updateSummaryTable(){
-    const year = document.getElementById('year-selector').value;
+async function updateSummaryTable(data, year, selectedCurrency){
+    const tableContainer = document.getElementsByClassName("summary-table-container")[0];
+    const currency = selectedCurrency == 'EUR' ? '€' : '$';
+    const months = [
+        translation["January"],
+        translation["February"],
+        translation["March"],
+        translation["April"],
+        translation["May"],
+        translation["June"],
+        translation["July"],
+        translation["August"],
+        translation["September"],
+        translation["October"],
+        translation["November"],
+        translation["December"]
+    ]
 
-    fetch('/all_transactions')
-        .then((response) => response.json())
-        .then((data) => {
-            const table = document.getElementsByClassName("summary-table-container")[0];
+    while(tableContainer.firstChild) {
+        tableContainer.removeChild(tableContainer.firstChild);
+    }
 
-            while(table.firstChild) {
-                table.removeChild(table.firstChild);
-            }
-            table.insertAdjacentHTML('beforeend', `
-                <table class="summary-table">
-                    <tr class="summary-tr">
-                        <td class="summary-name-td">${translation["January"]}</td>
-                        <td class="actions-td" id="january">N/A</td>
-                    </tr>
-                    <tr class="summary-tr">
-                        <td class="summary-name-td">${translation["February"]}</td>
-                        <td class="actions-td" id="february">N/A</td>
-                    </tr>
-                    <tr class="summary-tr">
-                        <td class="summary-name-td">${translation["March"]}</td>
-                        <td class="actions-td" id="march">N/A</td>
-                    </tr>
-                    <tr class="summary-tr">
-                        <td class="summary-name-td">${translation["April"]}</td>
-                        <td class="actions-td" id="april">N/A</td>
-                    </tr>
-                    <tr class="summary-tr">
-                        <td class="summary-name-td">${translation["May"]}</td>
-                        <td class="actions-td" id="may">N/A</td>
-                    </tr>
-                    <tr class="summary-tr">
-                        <td class="summary-name-td">${translation["June"]}</td>
-                        <td class="actions-td" id="june">N/A</td>
-                    </tr>
-                    <tr class="summary-tr">
-                        <td class="summary-name-td">${translation["July"]}</td>
-                        <td class="actions-td" id="july">N/A</td>
-                    </tr>
-                    <tr class="summary-tr">
-                        <td class="summary-name-td">${translation["August"]}</td>
-                        <td class="actions-td" id="august">N/A</td>
-                    </tr>
-                    <tr class="summary-tr">
-                        <td class="summary-name-td">${translation["September"]}</td>
-                        <td class="actions-td" id="september">N/A</td>
-                    </tr>
-                    <tr class="summary-tr">
-                        <td class="summary-name-td">${translation["October"]}</td>
-                        <td class="actions-td" id="october">N/A</td>
-                    </tr>
-                    <tr class="summary-tr">
-                        <td class="summary-name-td">${translation["November"]}</td>
-                        <td class="actions-td" id="november">N/A</td>
-                    </tr>
-                    <tr class="summary-tr">
-                        <td class="summary-name-td">${translation["December"]}</td>
-                        <td class="actions-td" id="december">N/A</td>
-                    </tr>
-                </table>`);
+    const table = tableContainer.appendChild(document.createElement('table'));
+    table.classList.add('summary-table');
+    for(const month of months){
+        const row = table.appendChild(document.createElement('tr'));
+        const monthColumn = row.appendChild(document.createElement('td'));
+        const dataColumn = row.appendChild(document.createElement('td'));
 
-            for(const month in data[year]){
-                const month_column = document.getElementById(month.toLowerCase());
-                let transactions = [];
-                for(day in data[year][month]){
-                    for(transaction in data[year][month][day]){
-                        transactions.push(data[year][month][day][transaction][1]);
+        monthColumn.classList.add('summary-name-td');
+        monthColumn.innerText = month;
+
+        dataColumn.classList.add('actions-td');
+        dataColumn.id = month.toLowerCase();
+        dataColumn.innerText = translation['na'];
+    }
+
+    for(const month in data[year]){
+        const monthColumn = document.getElementById(translation[month].toLowerCase());
+        let transactions = [];
+
+        for(day in data[year][month]){
+            for(const transaction of data[year][month][day]){
+                if(transaction[6] == selectedCurrency){
+                    transactions.push(transaction[1]);
+                }
+                else{
+                    const convertPromise = await fetch(`/convert?value=${transaction[1]}&from=${transaction[6]}&to=${selectedCurrency}`);
+                    if(!convertPromise.ok){
+                        alert(transaction['no_api']);
+                        return;
                     }
-                }
-                
-                let monthly_diff = transactions.reduce(function (x, y) {
-                    return x + y;
-                }, 0);
-                monthly_diff = Math.round((monthly_diff + Number.EPSILON) * 100) / 100;
 
-                if(monthly_diff>0){
-                    month_column.style.color = "#009e15";
-                    month_column.innerText = `+${monthly_diff}` + currency;
-                }
-                if(monthly_diff<0){
-                    month_column.style.color = "red";
-                    month_column.innerText = `${monthly_diff}` + currency;
-                }
-                if(monthly_diff == 0){
-                    month_column.innerText = `${monthly_diff}` + currency;
+                    const conversionData = await convertPromise.json();
+                    transactions.push(parseFloat(conversionData));
                 }
             }
-    })
+        }
+
+        const monthlyDifference = (transactions.reduce(function (x, y) {return x + y;}, 0) / 100).toFixed(2);
+
+        if(monthlyDifference>0){
+            monthColumn.style.color = "#009e15";
+            monthColumn.innerText = `+${monthlyDifference}` + currency;
+        }
+        if(monthlyDifference<0){
+            monthColumn.style.color = "red";
+            monthColumn.innerText = monthlyDifference + currency;
+        }
+        if(monthlyDifference == 0){
+            monthColumn.innerText = monthlyDifference + currency;
+        }
+    }
 }
 
 function openNav2() {
@@ -48337,7 +48346,6 @@ window.onload = function() {
     fetch("/current_lang")
     .then((response) => response.json())
     .then((data) => {
-        currency = data == "ita" ? "€" : "$";
         fetch(`/translations?lang=${data}`).then((response) => response.json())
         .then((data) => {
             translation = data;
@@ -48348,4 +48356,4 @@ window.onload = function() {
         })
     })
 }
-//By Riccardo Luongo, 29/03/2025
+//Riccardo Luongo, 16/05/2025
