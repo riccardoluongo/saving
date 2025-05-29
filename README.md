@@ -24,7 +24,8 @@ Edit the file and add this line with your key at the end:
 SECRET_KEY= #your key here
 ```
 
-And add a line to specify the maximum size of the log file (in bytes) before a new one is used, and how many old files should be kept:
+And add a line to specify the maximum size of the log file (in bytes) before a new one is used,
+and how many old files should be kept:
 ```
 MAX_LOGSIZE=100000
 LOG_BACKUP_COUNT=10
@@ -46,12 +47,12 @@ This program uses a systemd service to automatically start at boot.
 
 If you wish to run manually, run:
 ```
-gunicorn -w {N_WORKERS} main:app --access-logfile 'log/access/access.log' -b 0.0.0.0:{YOUR_PORT}
+venv/bin/gunicorn -w {N_WORKERS} main:app -b 0.0.0.0:{YOUR_PORT}
 ```
 replacing N_WORKERS with the number of gunicorn workers you wish to use, and PORT with your desired port.
 A recommended number of workers is (cpu_cores * 2). Using a higher number will lead to better performance at the cost of higher memory usage.
 
-To install as a systemd service, edit saving.service replacing the values shown before and copy the file in the appropriate systemd directory:
+To install as a systemd service, edit saving.service replacing the values in brackets and copy the file in the appropriate systemd directory:
 ```
 cp saving.service /etc/systemd/system/
 ```
