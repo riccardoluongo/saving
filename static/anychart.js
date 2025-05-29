@@ -48317,7 +48317,6 @@ async function updateSummaryTable(data, year, selectedCurrency){
                 }
             }
         }
-
         const monthlyDifference = (transactions.reduce(function (x, y) {return x + y;}, 0) / 100).toFixed(2);
 
         if(monthlyDifference>0){

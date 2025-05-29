@@ -16,6 +16,7 @@ function updateBalance(){
         .then((data) => {
             const balanceDiv = document.getElementById("balance-val");
             const currencySymbol = currency.value == 'EUR' ? '€' : '$';
+
             currency.setAttribute('onchange', `updateBalance()`);
             currency.style.display = '';
 
@@ -198,7 +199,7 @@ function calculatePages(data, currency){
             const btn = pageBtnContainer.appendChild(document.createElement('span'));
             btn.innerText = i;
 
-            btn.setAttribute("onclick", `updateTransactionTable('date',${i})`, currency);
+            btn.setAttribute("onclick", `updateTransactionTable('date',${i}, '${currency}')`);
             btn.setAttribute("id", `btn-${i}`);
             btn.classList.add('page-btn');
         }
@@ -357,7 +358,7 @@ function updateTransactionTable(sortMode, page, currency) {
         fetch(`/get_transactions?wallet=${wallet}&offset=0&limit=0`)
         .then(response => response.json())
         .then(data => {
-            calculatePages(data);
+            calculatePages(data, currency);
             document.getElementById(`btn-${page}`).style.color = "white";
         })
 
@@ -440,7 +441,6 @@ function updateTransactionTable(sortMode, page, currency) {
                 nameSortCounter = 0;
                 walletSortCounter = 0;
 
-
                 if(dateSortCounter%2 != 0){
                     transactions.sort((a, b) => {
                         const dateA = new Date(a[0]);
@@ -448,6 +448,7 @@ function updateTransactionTable(sortMode, page, currency) {
 
                         return dateB - dateA;
                     })
+                    transactions = transactions.reverse();
                 }
                 else{
                     transactions.sort((a, b) => {
@@ -456,7 +457,6 @@ function updateTransactionTable(sortMode, page, currency) {
 
                         return dateB - dateA;
                     });
-                    transactions = transactions.reverse();
                 }
 
                 selectedSort.appendChild(arrow);
@@ -548,4 +548,4 @@ window.onload = function() {
         })
     })
 }
-//Riccardo Luongo, 29/05/2025
+//Riccardo Luongo, 30/05/2025
