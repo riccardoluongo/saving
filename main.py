@@ -60,7 +60,9 @@ class Users(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(250), unique=True, nullable=False)
     password = db.Column(db.String(250), nullable=False)
-    lang = db.Column(db.String(250), default="eng", nullable=False)
+    lang = db.Column(db.String(3), default="eng", nullable=False)
+    preferred_currency = db.Column(db.String(3), default="USD", nullable=False)
+
     def remove(self):
         db.session.delete(self)
 
@@ -400,4 +402,25 @@ def convert():
     to_c = request.args['to'].upper()
 
     return(jsonify(converter.convert(value, from_c, to_c)))
-#Riccardo Luongo, 20/05/2025
+
+@app.route('/settings', methods = ['GET', 'POST'])
+@login_required
+def settings():
+    if request.method == 'POST':
+        current_user.preferred_currency = request.form.get("default-currency-selector")
+        db.session.commit()
+    return render_template('settings.html', translation = (ita if current_user.lang == "ita" else eng))
+
+@app.route('/preferred_currency')
+@login_required
+def preferred_currency():
+    return jsonify(current_user.preferred_currency)
+
+@app.route('/reset_settings', methods = ['POST'])
+@login_required
+def reset_settings():
+    current_user.preferred_currency = "USD"
+    db.session.commit()
+
+    return Response(status=200)
+#Riccardo Luongo, 30/05/2025

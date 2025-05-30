@@ -79,5 +79,11 @@
     "del_all_wallets_err" : "Impossibile eliminare tutti i portafogli, controlla le log per ulteriori informazioni.",
     "del_wallet_err" : "Impossibile eliminare il portafoglio, controlla le log per ulteriori informazioni.",
     "create_wallet_err" : "Impossibile creare il portafoglio, controlla le log per ulteriori informazioni.",
-    "balance_err" : "Saldo non disponibile, controlla le log per ulteriori informazioni."
+    "balance_err" : "Saldo non disponibile, controlla le log per ulteriori informazioni.",
+    "pref_currency" : "Valuta preferita",
+    "pref_currency_desc" : "Sceglie la valuta predefinita da mostrare nel grafico e nel saldo totale",
+    "settings" : "Impostazioni",
+    "apply" : " Applica",
+    "reset" : " Reimposta",
+    "confirm_reset" : "Reimpostare le impostazioni predefinite?"
 }

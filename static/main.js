@@ -542,9 +542,16 @@ window.onload = function() {
         .then((data) => {
             translation = data;
             token = document.getElementById('csrf-token').value;
+            fetch("preferred_currency")
+            .then((response) => response.json())
+            .then((preferredCurrency) => {
+                const currency = document.getElementById("currency");
+                currency.value = preferredCurrency;
+                currency.selectedIndex = preferredCurrency == "USD" ? 0 : 1;
 
-            updateWalletSelector();
-            document.getElementById('wallet-selector').addEventListener('change', updateBalance);
+                updateWalletSelector();
+                document.getElementById('wallet-selector').addEventListener('change', updateBalance);
+            })
         })
     })
 }

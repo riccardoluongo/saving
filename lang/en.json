@@ -1,7 +1,7 @@
 {
     "name_sorter" : "Name:",
     "wallet_sorter" : "Wallet",
-    "value_sorter" : "Value:", 
+    "value_sorter" : "Value:",
     "add_btn" : "+ Add money",
     "pay_btn" : "- New payment",
     "date_sorter" : "Date",
@@ -79,5 +79,11 @@
     "del_all_wallets_err" : "Couldn't delete all wallets, check the logs for further information.",
     "del_wallet_err" : "Couldn't delete wallet, check the logs for further information.",
     "create_wallet_err" : "Couldn't create wallet, check the logs for further information.",
-    "balance_err" : "Couldn't retrieve balance, check the logs for further information."
+    "balance_err" : "Couldn't retrieve balance, check the logs for further information.",
+    "pref_currency" : "Preferred currency",
+    "pref_currency_desc" : "Selects the default currency to show in the total balance and summary pages",
+    "settings" : "Settings",
+    "apply" : " Apply",
+    "reset" : " Reset",
+    "confirm_reset" : "Are you sure you want to restore the default settings?"
 }

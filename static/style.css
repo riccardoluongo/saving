@@ -116,8 +116,8 @@ img {
     top: 4rem;
     border-radius: 0.7rem;
     background-color: rgba(255, 255, 255, 0.582);
-    left: 50%;              
-    transform: translateX(-50%); 
+    left: 50%;
+    transform: translateX(-50%);
     z-index: 1000;
     max-width: 800px;
 }
@@ -689,4 +689,39 @@ th, td,tr, table {
     height: fit-content;
     top: 20px;
     display: flex;
+}
+.settings-container{
+    width: 90%;
+    position: fixed;
+    height: 80%;
+    top: 4rem;
+    border-radius: 0.7rem;
+    background-color: rgba(255, 255, 255, 0.582);
+    left: 50%;
+    transform: translateX(-50%);
+    max-width: 800px;
+    color: black;
+    padding-top: 10px;
+}
+.setting-div {
+    width: 90%;
+    margin: auto;
+    position: relative;
+    padding: 15px;
+}
+.setting-desc{
+    font-size: small;
+    margin-bottom: 10px;
+}
+.default-currency-selector{
+    background: transparent;
+    border: 0;
+    font-size: large;
+    height: 30px
+}
+.btn-div{
+    position: relative;
+    margin-bottom: 10px;
+    left: 20px;
+    top: 10px;
 }

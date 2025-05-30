@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<head>
+    <title>Savings</title>
+    <link rel = "icon" href="/static/favicon.ico" type="image/x-icon">
+    <link rel = "stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/static/bootstrap.css">
+    <script src="/static/bootstrap.js"></script>
+    <script src="/static/settings.js"></script>
+    <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1">
+</head>
+
+<body>
+    <input type="hidden" value="{{ translation['confirm_reset'] }}" id="confirm-text"/>
+    <a class="home-link" href="/"><i class="fa fa-home fa-3x home" aria-hidden="true"></i></a>
+    <span class="title">{{ translation['settings'] }}</span>
+    <form class="settings-container" action="#" method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <div class="btn-div">
+            <button type="submit" class="btn btn-primary" action="#"><i class="fa fa-check" aria-hidden="true"></i>{{ translation['apply'] }}</button>
+            <button type="button" class="btn btn-primary" id="reset-btn"><i class="fa fa-refresh" aria-hidden="true"></i>{{ translation['reset'] }}</button>
+        </div>
+        <div class="setting-div">
+            <div style="font-size: larger;">{{ translation['pref_currency'] }}</div>
+            <div class="setting-desc">{{ translation['pref_currency_desc'] }}</div>
+            <select class="default-currency-selector" name="default-currency-selector">
+                <option value="USD">USD</option>
+                <option value="EUR">EUR</option>
+            </select>
+        </div>
+    </form>
+</body>
