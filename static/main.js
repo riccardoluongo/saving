@@ -21,7 +21,7 @@ function updateBalance(){
             currency.style.display = '';
 
             balanceDiv.innerText = (parseFloat(data)/100).toFixed(2) + currencySymbol;
-            updateTransactionTable("date", 1, currencySymbol);
+            updateTransactionTable("date", 1);
         })
     }
     else{
@@ -32,12 +32,10 @@ function updateBalance(){
         .then((data) => {
             const balanceDiv = document.getElementById("balance-val");
             const balance = parseFloat(data[0]) / 100
-            let currency = "$";
-            if(data[1] == "EUR")
-                currency = "€";
+            const currencySymbol = data[1] == 'EUR' ? '€' : '$';
 
-            balanceDiv.innerText = balance + currency;
-            updateTransactionTable("date", 1, currency);
+            balanceDiv.innerText = balance + currencySymbol;
+            updateTransactionTable("date", 1);
         })
     }
 }
@@ -180,7 +178,7 @@ function whiteBtn(id){
     document.getElementById(id).style.color = "white"
 }
 
-function calculatePages(data, currency){
+function calculatePages(data){
     const pageBtnContainer = document.getElementById('page-btn-wrapper');
     const rowsPerPageSelector = document.getElementById('items-page');
 
@@ -199,7 +197,7 @@ function calculatePages(data, currency){
             const btn = pageBtnContainer.appendChild(document.createElement('span'));
             btn.innerText = i;
 
-            btn.setAttribute("onclick", `updateTransactionTable('date',${i}, '${currency}')`);
+            btn.setAttribute("onclick", `updateTransactionTable('date', ${i})`);
             btn.setAttribute("id", `btn-${i}`);
             btn.classList.add('page-btn');
         }
@@ -210,17 +208,17 @@ function calculatePages(data, currency){
 
 let nameSortCounter = walletSortCounter = valueSortCounter = dateSortCounter = 0;
 
-function updateTransactionTable(sortMode, page, currency) {
+function updateTransactionTable(sortMode, page) {
     const wallet = document.getElementById('wallet-selector').value;
     const rowsPerPageSelector = document.getElementById('items-page');
-    rowsPerPageSelector.setAttribute("onchange", `updateTransactionTable("date", 1, "${currency}")`);
+    rowsPerPageSelector.setAttribute("onchange", `updateTransactionTable("date", 1)`);
     const offset = Number(rowsPerPageSelector.value) * (Number(page) - 1);
 
     if(wallet == "Totalbalance"){
         fetch(`/transactions_list?offset=0&limit=0`)
         .then(response => response.json())
         .then(data => {
-            calculatePages(data, currency);
+            calculatePages(data);
             document.getElementById(`btn-${page}`).style.color = "white";
         })
 
@@ -253,15 +251,15 @@ function updateTransactionTable(sortMode, page, currency) {
 
             nameColumn.innerText = translation["name_sorter"].slice(0, -1);
             nameColumn.setAttribute('class', 'name-column');
-            nameColumn.setAttribute("onclick", `updateTransactionTable("name", ${page}, '${currency}'); nameSortCounter+=1`);
+            nameColumn.setAttribute("onclick", `updateTransactionTable("name", ${page}); nameSortCounter+=1`);
 
             walletColumn.innerText = translation["wallet_sorter"];
             walletColumn.setAttribute('class', 'wallet-column');
-            walletColumn.setAttribute("onclick", `updateTransactionTable("wallet", ${page}, '${currency}'); walletSortCounter+=1`);
+            walletColumn.setAttribute("onclick", `updateTransactionTable("wallet", ${page}); walletSortCounter+=1`);
 
             valueColumn.innerText = translation["value_sorter"].slice(0, -1);
             valueColumn.setAttribute('class', 'value-column');
-            valueColumn.setAttribute("onclick", `updateTransactionTable("value", ${page}, '${currency}'); valueSortCounter+=1`);
+            valueColumn.setAttribute("onclick", `updateTransactionTable("value", ${page}); valueSortCounter+=1`);
 
             data.sort((a, b) => {
                 const dateA = new Date(a[0]);
@@ -323,6 +321,7 @@ function updateTransactionTable(sortMode, page, currency) {
                 selectedSort.style.color = `white`;
             }
 
+            const currency = data[0][6] == 'EUR' ? '€' : '$';
             for(const transaction in data){
                 const row = table.appendChild(document.createElement('tr'));
 
@@ -358,7 +357,7 @@ function updateTransactionTable(sortMode, page, currency) {
         fetch(`/get_transactions?wallet=${wallet}&offset=0&limit=0`)
         .then(response => response.json())
         .then(data => {
-            calculatePages(data, currency);
+            calculatePages(data);
             document.getElementById(`btn-${page}`).style.color = "white";
         })
 
@@ -406,15 +405,15 @@ function updateTransactionTable(sortMode, page, currency) {
 
             nameColumn.innerText = translation["name_sorter"].slice(0, -1);
             nameColumn.setAttribute('class', 'name-column');
-            nameColumn.setAttribute("onclick", `updateTransactionTable("name", ${page}, '${currency}'); nameSortCounter+=1`)
+            nameColumn.setAttribute("onclick", `updateTransactionTable("name", ${page}); nameSortCounter+=1`)
 
             dateColumn.innerText = translation["date_sorter"];
             dateColumn.setAttribute('class', 'date-column');
-            dateColumn.setAttribute("onclick", `updateTransactionTable("date", ${page}, '${currency}'); dateSortCounter+=1`)
+            dateColumn.setAttribute("onclick", `updateTransactionTable("date", ${page}); dateSortCounter+=1`)
 
             valueColumn.innerText = translation["value_sorter"].slice(0, -1);
             valueColumn.setAttribute('class', 'value-column');
-            valueColumn.setAttribute("onclick", `updateTransactionTable("value", ${page}, '${currency}'); valueSortCounter+=1`)
+            valueColumn.setAttribute("onclick", `updateTransactionTable("value", ${page}); valueSortCounter+=1`)
 
             let transactions = data;
             const selectedSort = document.getElementsByClassName(`${sortMode}-column`)[0];
@@ -483,6 +482,7 @@ function updateTransactionTable(sortMode, page, currency) {
                 selectedSort.style.color = `white`;
             }
 
+            const currency = data[0][5] == 'EUR' ? '€' : '$';
             for(const transaction in transactions) {
                 const row = table.appendChild(document.createElement('tr'));
 
