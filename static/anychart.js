@@ -48349,10 +48349,18 @@ window.onload = function() {
         .then((data) => {
             translation = data;
 
-            updateYearSelector();
-            document.getElementById('year-selector').addEventListener('change', updateMonthSelector);
-            document.getElementById('month-selector').addEventListener('change', updateChart);
+            fetch("preferred_currency")
+            .then((response) => response.json())
+            .then((preferredCurrency) => {
+                const currency = document.getElementById("currency-selector");
+                currency.setAttribute("value", preferredCurrency);
+                currency.selectedIndex = preferredCurrency == "USD" ? 0 : 1;
+
+                updateYearSelector();
+                document.getElementById('year-selector').addEventListener('change', updateMonthSelector);
+                document.getElementById('month-selector').addEventListener('change', updateChart);
+            })
         })
     })
 }
-//Riccardo Luongo, 16/05/2025
+//Riccardo Luongo, 30/05/2025
