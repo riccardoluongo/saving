@@ -539,4 +539,37 @@ def get_total_balance(user, currency):
         main.app.logger.error(f"Error while retrieving total balance for user '{user}': {e}")
     finally:
         conn.close()
-#Riccardo Luongo, 30/05/2025
+
+def get_monthly_difference(user, year, selected_currency):
+    database_file = r"./database/"+user+".db"
+
+    try:
+        conn = sqlite3.connect(database_file, check_same_thread=False)
+        cur = conn.cursor()
+    except Error as e:
+        main.app.logger.error(f"Error while connecting user '{user}' to the database: {e}")
+
+    try:
+        transactions = get_all_transactions(user)
+        months = []
+        year = int(year)
+
+        for month in transactions[year]:
+            monthly_transactions = []
+            for day in transactions[year][month]:
+                for transaction in transactions[year][month][day]:
+                    if transaction[1] != 0:
+                        if transaction[6] == selected_currency:
+                            monthly_transactions.append(transaction[1])
+                        else:
+                            monthly_transactions.append(converter.convert(transaction[1], transaction[6], selected_currency))
+
+            months.append(sum(monthly_transactions))
+
+        return months
+    except Error as e:
+        main.app.logger.error(f"Error while calculating monthly balance difference for user '{user}': {e}")
+    finally:
+        conn.close()
+
+#Riccardo Luongo, 01/06/2025

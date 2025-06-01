@@ -48154,7 +48154,7 @@
     $_._ = _;
 });
 
-async function updateChart(){
+async function updateChart(transactions){
     let graphData = [];
     const year = document.getElementById('year-selector').value;
     const month = document.getElementById('month-selector').value;
@@ -48168,30 +48168,27 @@ async function updateChart(){
         graphContainer.removeChild(graphContainer.firstChild);
     }
 
-    const transactionsPromise = await fetch(`/all_transactions`);
-    if(!transactionsPromise.ok){
-        alert(translation['all_transactions_err']);
-        return;
-    }
-
-    const transactions = await transactionsPromise.json();
     for(const day in transactions[year][month]){
-        const dailySnapshot = JSON.parse(transactions[year][month][day].slice(-1)[0][2]);
+        const dailySnapshot = JSON.parse(transactions[year][month][day].at(-1)[2]);
 
         for(const wallet of dailySnapshot){
             if(wallet[1] == selectedCurrency){
                 graphData.push([day, wallet[0]/100]);
             }
             else{
-                const convertPromise = await fetch(`/convert?value=${wallet[0]}&from=${wallet[1]}&to=${selectedCurrency}`)
-                if(!convertPromise.ok){
-                    alert(translation['no_api']);
-                    return;
-                }
+                if(wallet[0] != 0){
+                    const convertPromise = await fetch(`/convert?value=${wallet[0]}&from=${wallet[1]}&to=${selectedCurrency}`)
+                    if(!convertPromise.ok){
+                        alert(translation['no_api']);
+                        return;
+                    }
 
-                const conversionData = await convertPromise.json();
-                const value = parseFloat(conversionData.toFixed(2));
-                graphData.push([day, value/100]);
+                    const conversionData = await convertPromise.json();
+                    const value = parseFloat(conversionData.toFixed(2));
+                    graphData.push([day, value/100]);
+                } else{
+                    graphData.push([day, wallet[0]/100]);
+                }
             }
         }
     }
@@ -48215,7 +48212,7 @@ async function updateChart(){
     chart.container("graph");
 
     chart.draw();
-    updateSummaryTable(transactions, year, selectedCurrency);
+    updateSummaryTable(year, selectedCurrency);
 }
 
 function updateYearSelector() {
@@ -48232,34 +48229,30 @@ function updateYearSelector() {
             }
 
             selector.options[0].selected = true;
-            updateMonthSelector();
+            updateMonthSelector(data);
         })
 }
 
-function updateMonthSelector() {
+function updateMonthSelector(data) {
     const year = document.getElementById('year-selector').value;
-    fetch('/all_transactions')
-        .then((response) => response.json())
-        .then((data) => {
-            const selector = document.getElementById('month-selector');
+    const selector = document.getElementById('month-selector');
 
-            while(selector.firstChild) {
-                selector.removeChild(selector.firstChild);
-            }
-            for(const month in data[year]) {
-                const option = selector.appendChild(document.createElement('option'));
-                option.setAttribute('value', month);
-                option.innerText = translation[month];
-            }
+    while(selector.firstChild) {
+        selector.removeChild(selector.firstChild);
+    }
+    for(const month in data[year]) {
+        const option = selector.appendChild(document.createElement('option'));
+        option.setAttribute('value', month);
+        option.innerText = translation[month];
+    }
 
-            let length = selector.options.length;
-            selector.options[length-1].selected = true;
+    let length = selector.options.length;
+    selector.options[length-1].selected = true;
 
-            updateChart();
-        })
+    updateChart(data);
 }
 
-async function updateSummaryTable(data, year, selectedCurrency){
+async function updateSummaryTable(year, selectedCurrency){
     const tableContainer = document.getElementsByClassName("summary-table-container")[0];
     const currency = selectedCurrency == 'EUR' ? '€' : '$';
     const months = [
@@ -48296,28 +48289,12 @@ async function updateSummaryTable(data, year, selectedCurrency){
         dataColumn.innerText = translation['na'];
     }
 
-    for(const month in data[year]){
-        const monthColumn = document.getElementById(translation[month].toLowerCase());
-        let transactions = [];
+    const diffPromise = await fetch(`/monthly_difference?year=${year}&currency=${selectedCurrency}`);
+    const monthlyDifferenceData = await diffPromise.json();
 
-        for(day in data[year][month]){
-            for(const transaction of data[year][month][day]){
-                if(transaction[6] == selectedCurrency){
-                    transactions.push(transaction[1]);
-                }
-                else{
-                    const convertPromise = await fetch(`/convert?value=${transaction[1]}&from=${transaction[6]}&to=${selectedCurrency}`);
-                    if(!convertPromise.ok){
-                        alert(transaction['no_api']);
-                        return;
-                    }
-
-                    const conversionData = await convertPromise.json();
-                    transactions.push(parseFloat(conversionData));
-                }
-            }
-        }
-        const monthlyDifference = (transactions.reduce(function (x, y) {return x + y;}, 0) / 100).toFixed(2);
+    for(const month in monthlyDifferenceData){
+        const monthColumn = document.getElementById(months[month].toLowerCase());
+        const monthlyDifference = (monthlyDifferenceData[month]/100).toFixed(2);
 
         if(monthlyDifference>0){
             monthColumn.style.color = "#009e15";
@@ -48363,4 +48340,4 @@ window.onload = function() {
         })
     })
 }
-//Riccardo Luongo, 30/05/2025
+//Riccardo Luongo, 01/06/2025

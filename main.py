@@ -423,4 +423,12 @@ def reset_settings():
     db.session.commit()
 
     return Response(status=200)
-#Riccardo Luongo, 30/05/2025
+
+@app.route('/monthly_difference')
+@login_required
+def monthly_difference():
+    year = request.args["year"]
+    currency = request.args["currency"]
+
+    return get_monthly_difference(current_user.username, year, currency)
+#Riccardo Luongo, 01/06/2025
