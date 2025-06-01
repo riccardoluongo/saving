@@ -5,7 +5,7 @@ import main
 from sqlite3 import Error
 from datetime import datetime
 from currency_converter import CurrencyConverter, SINGLE_DAY_ECB_URL
-from json import dumps
+from json import dumps, loads
 
 converter = CurrencyConverter(SINGLE_DAY_ECB_URL)
 
@@ -540,19 +540,10 @@ def get_total_balance(user, currency):
     finally:
         conn.close()
 
-def get_monthly_difference(user, year, selected_currency):
-    database_file = r"./database/"+user+".db"
-
+def get_monthly_difference(user, year, selected_currency, transactions):
     try:
-        conn = sqlite3.connect(database_file, check_same_thread=False)
-        cur = conn.cursor()
-    except Error as e:
-        main.app.logger.error(f"Error while connecting user '{user}' to the database: {e}")
-
-    try:
-        transactions = get_all_transactions(user)
         months = []
-        year = int(year)
+        year = year
 
         for month in transactions[year]:
             monthly_transactions = []
@@ -569,7 +560,32 @@ def get_monthly_difference(user, year, selected_currency):
         return months
     except Error as e:
         main.app.logger.error(f"Error while calculating monthly balance difference for user '{user}': {e}")
-    finally:
-        conn.close()
 
+def calculate_graph_data(user, year, month, selected_currency):
+    try:
+        year = int(year)
+        month = calendar.month_name[int(month)]
+        transactions = get_all_transactions(user)
+        monthly_difference = get_monthly_difference(user, year, selected_currency, transactions)
+        graph_data = []
+
+        for day in transactions[year][month]:
+            snapshot = loads(transactions[year][month][day][-1][2])
+
+            for wallet in snapshot:
+                if wallet[1] == selected_currency:
+                    graph_data.append([day, wallet[0]/100])
+                else:
+                    if wallet[0] != 0:
+                        graph_data.append([day, converter.convert(wallet[0], wallet[1], selected_currency)/100])
+                    else:
+                        graph_data.append([day, 0])
+        graph_data.sort(key=lambda x: x[0])
+
+        if month == list(transactions[year].keys())[-1] and year == list(transactions.keys())[-1]:
+            graph_data[-1][1] = get_total_balance(user, selected_currency)/100
+
+        return (graph_data, monthly_difference)
+    except Error as e:
+        main.app.logger.error(f"Couldn't calculate graph data for user {user}: {e}")
 #Riccardo Luongo, 01/06/2025

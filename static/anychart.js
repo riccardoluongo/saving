@@ -48154,10 +48154,9 @@
     $_._ = _;
 });
 
-async function updateChart(transactions){
-    let graphData = [];
+async function updateChart(){
     const year = document.getElementById('year-selector').value;
-    const month = document.getElementById('month-selector').value;
+    const month = document.getElementById('month-selector').selectedIndex + 1;
     const graphContainer = document.getElementById('graph');
     const currencySelector = document.getElementById('currency-selector');
     const selectedCurrency = currencySelector.value;
@@ -48168,43 +48167,10 @@ async function updateChart(transactions){
         graphContainer.removeChild(graphContainer.firstChild);
     }
 
-    for(const day in transactions[year][month]){
-        const dailySnapshot = JSON.parse(transactions[year][month][day].at(-1)[2]);
+    const graphDataPromise = await fetch(`/graph_data?year=${year}&month=${month}&currency=${selectedCurrency}`);
+    const graphData = await graphDataPromise.json();
 
-        for(const wallet of dailySnapshot){
-            if(wallet[1] == selectedCurrency){
-                graphData.push([day, wallet[0]/100]);
-            }
-            else{
-                if(wallet[0] != 0){
-                    const convertPromise = await fetch(`/convert?value=${wallet[0]}&from=${wallet[1]}&to=${selectedCurrency}`)
-                    if(!convertPromise.ok){
-                        alert(translation['no_api']);
-                        return;
-                    }
-
-                    const conversionData = await convertPromise.json();
-                    const value = parseFloat(conversionData.toFixed(2));
-                    graphData.push([day, value/100]);
-                } else{
-                    graphData.push([day, wallet[0]/100]);
-                }
-            }
-        }
-    }
-
-    const totalBalancePromise = await fetch(`/total_balance?currency=${selectedCurrency}`);
-    if(!totalBalancePromise.ok){
-        alert(translation['total_balance_err']);
-        return;
-    }
-
-    const totalBalance = await totalBalancePromise.json();
-    const lastDate = graphData.slice(-1)[0][0];
-    graphData.splice(-1);
-    graphData.push([lastDate, totalBalance/100]);
-
-    let dataSet = anychart.data.set(graphData);
+    let dataSet = anychart.data.set(graphData[0]);
     let firstSeriesData = dataSet.mapAs({x: 0, value: 1});
     let chart = anychart.line();
     let firstSeries = chart.line(firstSeriesData);
@@ -48212,7 +48178,7 @@ async function updateChart(transactions){
     chart.container("graph");
 
     chart.draw();
-    updateSummaryTable(year, selectedCurrency);
+    updateSummaryTable(selectedCurrency, graphData[1]);
 }
 
 function updateYearSelector() {
@@ -48249,10 +48215,10 @@ function updateMonthSelector(data) {
     let length = selector.options.length;
     selector.options[length-1].selected = true;
 
-    updateChart(data);
+    updateChart();
 }
 
-async function updateSummaryTable(year, selectedCurrency){
+async function updateSummaryTable(selectedCurrency, transactions){
     const tableContainer = document.getElementsByClassName("summary-table-container")[0];
     const currency = selectedCurrency == 'EUR' ? '€' : '$';
     const months = [
@@ -48289,12 +48255,9 @@ async function updateSummaryTable(year, selectedCurrency){
         dataColumn.innerText = translation['na'];
     }
 
-    const diffPromise = await fetch(`/monthly_difference?year=${year}&currency=${selectedCurrency}`);
-    const monthlyDifferenceData = await diffPromise.json();
-
-    for(const month in monthlyDifferenceData){
+    for(const month in transactions){
         const monthColumn = document.getElementById(months[month].toLowerCase());
-        const monthlyDifference = (monthlyDifferenceData[month]/100).toFixed(2);
+        const monthlyDifference = (transactions[month]/100).toFixed(2);
 
         if(monthlyDifference>0){
             monthColumn.style.color = "#009e15";

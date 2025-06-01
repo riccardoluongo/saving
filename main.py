@@ -424,11 +424,12 @@ def reset_settings():
 
     return Response(status=200)
 
-@app.route('/monthly_difference')
+@app.route('/graph_data')
 @login_required
-def monthly_difference():
+def graph_data():
     year = request.args["year"]
+    month = request.args["month"]
     currency = request.args["currency"]
 
-    return get_monthly_difference(current_user.username, year, currency)
+    return jsonify(calculate_graph_data(current_user.username, year, month, currency))
 #Riccardo Luongo, 01/06/2025
